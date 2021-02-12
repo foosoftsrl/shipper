@@ -1,8 +1,10 @@
 # Ignore Gradle project-specific cache directory
 .gradle
+.settings
 
 # Ignore Gradle build output directory
 build
 
 # Ignore Elcipse build output directory
 bin
+

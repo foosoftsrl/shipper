@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
+import javax.validation.constraints.NotNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +33,7 @@ import it.foosoft.shipper.api.Param;
 public class FileInput implements Input {
 	private static final Logger LOG = LoggerFactory.getLogger(FileInput.class);
 
+	@NotNull
 	@Param
 	String path;
 
@@ -67,6 +70,12 @@ public class FileInput implements Input {
 
 	@Override
 	public void start() {
+		if(path == null) {
+			throw new IllegalArgumentException("missing path parameter");
+		}
+		if(path.contains("*")) {
+			throw new IllegalArgumentException("no support for file filtering. Just directories");
+		}
 		scanExecutor = Executors.newScheduledThreadPool(1);
 		scanExecutor.scheduleWithFixedDelay(this::scan, 0, discover_interval * 500, TimeUnit.MILLISECONDS);
 		workerPool = Executors.newFixedThreadPool(threads);
@@ -185,7 +194,6 @@ public class FileInput implements Input {
 					 recursivelyScanDirectory(file, consumer);
 				}
 				else {
-					// Uhm... still seconds... can't believe this
 					consumer.accept(new Entry(file, Files.getLastModifiedTime(file)));
 				}
 			}

@@ -70,18 +70,18 @@ public class PipelineBuilder {
 	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, File f) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = new FileInputStream(f)) {
-			return parser.parse(istr);
+			return parser.doParse(istr);
 		}
 	}
 	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Objects.requireNonNull(url, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = url.openStream()) {
-			return parser.parse(istr);
+			return parser.doParse(istr);
 		}
 	}
 
-	private Pipeline parse(InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	private Pipeline doParse(InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Pipeline pipeline = new Pipeline(configuration);
 		ConfigLexer lexer = new ConfigLexer(CharStreams.fromStream(istr));
 		CommonTokenStream tokens = new CommonTokenStream(lexer);

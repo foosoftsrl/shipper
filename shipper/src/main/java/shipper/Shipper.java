@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -12,18 +11,16 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
-import it.foosoft.shipper.core.SimpleOutput;
 import it.foosoft.shipper.plugins.DefaultPluginFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 public class Shipper implements Callable<Integer> {
 
 	static ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
-	@Parameters(index = "0", description = "logstash pipeline (single file)")
-    private File pipelineFile = null;
+	@Option(names = {"-p", "--pipeline"}, description = "logstash pipeline (single file)")
+    private File pipelineFile = new File("/etc/shipper/pipeline");
 	
     @Option(names = {"-t", "--thread-count"}, description = "Threads used for filtering stage")
     private int threadCount = Runtime.getRuntime().availableProcessors();

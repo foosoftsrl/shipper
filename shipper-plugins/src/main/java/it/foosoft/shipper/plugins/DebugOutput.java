@@ -24,7 +24,6 @@ public class DebugOutput implements Output {
 		try {
 			System.err.println(writer.writeValueAsString(e));
 		} catch (JsonProcessingException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}
