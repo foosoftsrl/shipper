@@ -1,5 +1,5 @@
 [Service]
-ExecStart=/bin/sh -c '${JAVA} ${JAVA_ARGS} -jar shipper-fat.jar -cp "lib:plugins/*" shipper.App'
+ExecStart=/bin/sh -c '${JAVA} ${JAVA_ARGS} -cp "lib:plugins/*" -jar shipper-fat.jar'
 User=shipper
 Type=simple
 WorkingDirectory=/usr/share/shipper

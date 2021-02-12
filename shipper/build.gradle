@@ -37,6 +37,7 @@ task rpm(type: Rpm, dependsOn: 'fatJar') {
     release '1'
     os = LINUX
     type = BINARY
+    postInstall file('rpm/postInstall.sh')
     user 'root'
     fileMode 0644
     license 'Apache License'
@@ -44,6 +45,19 @@ task rpm(type: Rpm, dependsOn: 'fatJar') {
     requires('adoptopenjdk-15-hotspot-jre')
     vendor 'Foosoft Srl'
     from(fatJar.outputs.files) {
+        into '/usr/share/shipper'
+    }
+    from('rpm/etc') {
+        addParentDirs false
+        fileType CONFIG | NOREPLACE
+        into '/etc'
+    }
+    from('rpm/usr') {
+        addParentDirs false
+        into '/usr'
+    }
+    from('rpm/lib') {
+        addParentDirs false
         into '/usr/share/shipper'
     }
 }
@@ -54,9 +68,9 @@ dependencies {
     implementation project(path: ":shipper-api")
     implementation project(path: ":shipper-plugins")
     implementation project(path: ":shipper-core")
-	implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.14.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.14.0'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
-	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
-	implementation group: 'info.picocli', name: 'picocli', version: '4.6.1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
+    implementation group: 'info.picocli', name: 'picocli', version: '4.6.1'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 }

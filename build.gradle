@@ -1,63 +1,65 @@
 subprojects {
-    plugins.withType(JavaPlugin) {
-	    compileJava.options.encoding = 'UTF-8'
-	    compileTestJava.options.encoding = 'UTF-8'
-		sourceSets {
+  plugins.withType(JavaPlugin) {
+     project.apply plugin: 'eclipse'
+     compileJava.options.encoding = 'UTF-8'
+     compileTestJava.options.encoding = 'UTF-8'
+     sourceSets {
+        devel {
+          java {
+            srcDir 'src/devel/java'
+          }
+          resources {
+            srcDir 'src/devel/resources'
+          }
+        }
 
-		    devel {
-		        java {
-		            srcDir 'src/devel/java'
-		        }
-		        resources {
-		            srcDir 'src/devel/resources'
-		        }
-		    }
+        main {
+          java {
+            srcDir 'src/generated/java'
+          }
+        }
+     }
+     dependencies {
+       testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+       testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+       testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
+     }
+     sourceCompatibility = 15
+     targetCompatibility = 15
 
-			main {
-				java {
-					srcDir 'src/generated/java'
-				}
-			}
-		}
-	    dependencies {
-		  testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-		  testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-		  testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
-	    }
-	    sourceCompatibility = 15
-		targetCompatibility = 15
-
-		// mark all src/devel folders as "test", in order to have them access
-		// the test classpath.
-		// There are too many situations in which you want devel  
-		eclipse {
-		  classpath {
-		    containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
-		      file {
-		        whenMerged { classpath ->
-		          entries.findAll {
-		            it.kind == 'src' && (it.path.startsWith('src/test/') || it.path.startsWith('src/devel/')) 
-		          }.each { 
-		            it.entryAttributes['test'] = 'true' 
-		          }
-		        }
-		      }
-		    }
-		}
-
-		// this is really a bit of a hack....
-		// We force creation of an org.eclipse.core.resources.prefs file before creation of project file
-		// We work on project model and not on task because we're targeting buildship, which
-		// does a little bit of gradle voodoo and not execute standard tasks (at least I believe)
-		eclipse {
-		    project {
-		        file { beforeMerged { gp ->
-    		       file('.settings').mkdir()
-    		       File f = file('.settings/org.eclipse.core.resources.prefs')
-				   f.write('eclipse.preferences.version=1\n')
-		           f.append('encoding/<project>=UTF-8')
-		        }}
-		    }
-		}
+                // mark all src/devel folders as "test", in order to have them access
+                // the test classpath.
+                // There are too many situations in which you want devel
+    eclipse {
+      classpath {
+        containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+        file {
+          whenMerged { classpath ->
+            entries.findAll {
+              it.kind == 'src' && (it.path.startsWith('src/test/') || it.path.startsWith('src/devel/'))
+            }.each {
+              it.entryAttributes['test'] = 'true'
+            }
+          }
+        }
+      }
     }
+
+    // this is really a bit of a hack....
+    // We force creation of an org.eclipse.core.resources.prefs file before creation of project file
+    // We work on project model and not on task because we're targeting buildship, which
+    // does a little bit of gradle voodoo and not execute standard tasks (at least I believe)
+    eclipse {
+      project {
+        file { beforeMerged { gp ->
+          file('.settings').mkdir()
+          File f = file('.settings/org.eclipse.core.resources.prefs')
+          f.write('eclipse.preferences.version=1\n')
+          f.append('encoding/<project>=UTF-8')
+        }}
+      }
+    }
+
+  }
 }
+
