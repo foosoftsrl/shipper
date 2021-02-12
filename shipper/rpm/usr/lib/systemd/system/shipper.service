@@ -1,0 +1,12 @@
+[Service]
+ExecStart=/bin/sh -c '${JAVA} ${JAVA_ARGS} -jar shipper-fat.jar -cp "lib:plugins/*" shipper.App'
+User=shipper
+Type=simple
+WorkingDirectory=/usr/share/shipper
+Environment=JAVA=/usr/lib/jvm/adoptopenjdk-15-hotspot-jre/bin/java
+EnvironmentFile=-/etc/sysconfig/shipper
+
+[Install]
+WantedBy=multi-user.target
+
+

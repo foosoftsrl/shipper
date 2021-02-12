@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    api group: 'javax.validation', name: 'validation-api', version: '2.0.1.Final'
+	api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30'
+
+    // Use JUnit test framework.
+    testImplementation 'junit:junit:4.13'
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Properties>
+    <Property name="app-name">shipper</Property>
+    
+  </Properties>
+  <Appenders>
+    <RollingFile name="RollingFile" fileName="/var/log/${app-name}/${app-name}.log" filePattern="/var/log/${app-name}/${app-name}-%d{yyyy-MM-dd}-%i.log">
+      <PatternLayout>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{1} - %msg%n</pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="10 MB"/>
+        <TimeBasedTriggeringPolicy />
+      </Policies>
+      <DefaultRolloverStrategy max="100">
+        <Delete basePath="/var/log/${app-name}" maxDepth="1">
+          <IfFileName glob="${app-name}*">
+              <IfAny>
+                <IfAccumulatedFileSize exceeds="10 GB" />
+                <IfAccumulatedFileCount exceeds="50" />
+                <IfLastModified age="14d" />
+              </IfAny>
+          </IfFileName>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+  </Appenders>
+  <Loggers>
+    <Root level="info">
+      <AppenderRef ref="RollingFile"/>
+      <AppenderRef ref="RFC5424"/>
+    </Root>
+  </Loggers>
+</Configuration>

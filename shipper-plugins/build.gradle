@@ -1,0 +1,24 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    api project(path: ":shipper-api")
+
+	implementation group: 'com.jcraft', name: 'jsch', version: '0.1.55'
+	implementation group: 'com.maxmind.geoip2', name: 'geoip2', version: '2.15.0'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.12.1'
+	implementation group: 'com.github.ua-parser', name: 'uap-java', version: '1.5.1'
+	// https://mvnrepository.com/artifact/io.krakens/java-grok
+	implementation group: 'io.krakens', name: 'java-grok', version: '0.1.9'
+	// https://mvnrepository.com/artifact/org.elasticsearch.client/elasticsearch-rest-client
+	implementation group: 'org.elasticsearch.client', name: 'elasticsearch-rest-client', version: '7.11.0'
+
+    // Use JUnit test framework.
+    testImplementation 'junit:junit:4.13'
+    testImplementation project(path: ":shipper-core")
+}

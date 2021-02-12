@@ -1,0 +1,70 @@
+package it.foosoft.shipper.plugins;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.collections4.map.LRUMap;
+
+import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.Param;
+import ua_parser.Client;
+import ua_parser.Parser;
+
+public class UserAgentFilter implements Filter {
+
+	@Param(description="name of the field to parse")
+	public String source;
+	
+	@Param(description="path to ua-parser regexes.yaml (see github)")
+	public String regexes;
+
+	@Param
+	public String id;
+	
+	@Param
+	public String target;
+
+	private Parser uaParser;
+
+	Map<String, Client> lruMap = Collections.synchronizedMap(new LRUMap<>(4096));
+
+	@Override
+	public void start() {
+		uaParser = new Parser();
+	}
+
+	@Override
+	public void stop() {
+	}
+
+	@Override
+	public void process(Event e) {
+		String uaString = e.getFieldAsString(source);
+		if(uaString == null) {
+			fail();
+			return;
+		}
+		Client client = lruMap.computeIfAbsent(uaString, uaString_->{
+			return uaParser.parse(uaString_);
+		});
+		
+		Map<String,String> userAgent = new HashMap<>();
+		userAgent.put("name", client.userAgent.family);
+
+		userAgent.put("device", client.device.family);
+		
+		userAgent.put("os_name", client.os.family);
+		userAgent.put("os_major", client.os.major);
+		userAgent.put("os_minor", client.os.minor);
+		
+		e.setField("userAgent", userAgent);
+		
+	}
+
+	private void fail() {
+		// TODO: implement me
+	}
+
+}

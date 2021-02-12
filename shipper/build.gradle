@@ -1,0 +1,62 @@
+plugins {
+    id 'java'
+    id 'antlr'
+    id "nebula.rpm" version "8.4.2"
+}
+
+repositories {
+    jcenter()
+}
+
+
+generateGrammarSource {
+    maxHeapSize = "64m"
+    arguments += ["-visitor", "-long-messages"]
+    outputDirectory = new File("${project.buildDir}/generated-src/antlr/org/logstash".toString())
+}
+
+task fatJar(type: Jar, dependsOn: 'jar') {
+    manifest {
+        attributes 'Main-Class': 'shipper.Shipper'
+    }
+    baseName = 'shipper-fat'
+    from { 
+      configurations.runtimeClasspath.collect { 
+         it.isDirectory() ? it : zipTree(it) 
+      }
+    }
+    from {
+      	"build/classes/java/main" 
+    }
+
+}
+
+task rpm(type: Rpm, dependsOn: 'fatJar') {
+    release '1'
+    os = LINUX
+    type = BINARY
+    user 'root'
+    fileMode 0644
+    license 'Apache License'
+    packageDescription 'logstash (wannabe) compatible log shipper'
+    requires('adoptopenjdk-15-hotspot-jre')
+    vendor 'Foosoft Srl'
+    from(fatJar.outputs.files) {
+        into '/usr/share/shipper'
+    }
+}
+
+
+dependencies {
+    antlr "org.antlr:antlr4:4.9.1" // use ANTLR version 4
+    implementation project(path: ":shipper-api")
+    implementation project(path: ":shipper-plugins")
+    implementation project(path: ":shipper-core")
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.14.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
+	implementation group: 'info.picocli', name: 'picocli', version: '4.6.1'
+    implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+
+    testImplementation 'junit:junit:4.13'
+}

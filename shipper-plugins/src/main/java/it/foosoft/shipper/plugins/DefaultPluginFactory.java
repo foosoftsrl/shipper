@@ -1,0 +1,63 @@
+package it.foosoft.shipper.plugins;
+
+import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.Input;
+import it.foosoft.shipper.api.InputContext;
+import it.foosoft.shipper.api.OutputContext;
+import it.foosoft.shipper.api.Plugin;
+import it.foosoft.shipper.api.PluginManager;
+
+public class DefaultPluginFactory implements PluginManager {
+
+	public static DefaultPluginFactory INSTANCE = new DefaultPluginFactory();
+	
+	private DefaultPluginFactory() {
+		
+	}
+
+	public Input.Factory createInputPlugin(String name) {
+		if (name.equals("sftp")) {
+			return SftpInput::new;
+		}
+		else if (name.equals("file")) {
+			return TestInput::new;
+		}
+		throw new RuntimeException("No such input plugin: " + name);
+	}
+	
+	public Filter.Factory createFilterPlugin(String name) {
+		if (name.equals("mutate")) {
+			return MutateFilter::new;
+		} else if (name.equals("dissect")) {
+			return LogstashDissectFilter::new;
+		} else if (name.equals("dissect_regex")) {
+			return DissectFilter::new;
+		} else if (name.equals("dissect_logstash")) {
+			return LogstashDissectFilter::new;
+		} else if (name.equals("grok")) {
+			return GrokFilter::new;
+		} else if (name.equals("date")) {
+			return DateFilter::new;
+		} else if (name.equals("uriparse")) {
+			return UriParseFilter::new;
+		} else if (name.equals("urldecode")) {
+			return UrlDecodeFilter::new;
+		} else if (name.equals("geoip")) {
+			return GeoIpFilter::new;
+		} else if (name.equals("drop")) {
+			return DropFilter::new;
+		} else if (name.equals("farmunicapath")) {
+			return FarmUnicaPathFilter::new;
+		} else if (name.equals("useragent")) {
+			return UserAgentFilter::new;
+		}
+		throw new RuntimeException("No such filter plugin: " + name);
+	}
+
+	@Override
+	public Plugin.Factory createOutputPlugin(String name) {
+		if(name.equals("elasticsearch"))
+			return ElasticSearchOutput.factory;
+		throw new RuntimeException("No such output plugin: " + name);
+	}
+}

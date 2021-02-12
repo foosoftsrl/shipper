@@ -1,0 +1,3 @@
+#Environment file for shipper startup script
+
+#JAVA_ARGS=-Xmx3072m
