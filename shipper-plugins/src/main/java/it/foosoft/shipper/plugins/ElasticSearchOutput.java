@@ -1,9 +1,7 @@
 package it.foosoft.shipper.plugins;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -11,8 +9,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
@@ -20,7 +16,6 @@ import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -32,12 +27,12 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SequenceWriter;
 
 import it.foosoft.shipper.api.BatchOutput;
-import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.BatchOutputContext;
+import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Param;
 import it.foosoft.shipper.plugins.elastic.BulkRequestInputStream;
 
@@ -125,10 +120,42 @@ public class ElasticSearchOutput implements BatchOutput {
 
 	ObjectMapper mapper = new ObjectMapper();
 
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class Shards {
+		public int total;
+		public int successful;
+		public int failed;
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class Error {
+		public String type;
+		public String reason;
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class Index {
+		public String _index;
+		public String _type;
+		public String _id;
+		public String _version;
+		public String result;
+		public String status;
+		public String _seq_no;
+		public String _primary_term;
+		public Error error;
+		public Shards _shards;
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class Item {
+		public Index index;
+	}
+
 	static class BulkResponse {
 		public long took;
 		public boolean errors;
-		public Object[] items;
+		public Item[] items;
 	}
 	/**
 	 * Continously poll the  
@@ -169,7 +196,14 @@ public class ElasticSearchOutput implements BatchOutput {
 				else {
 					BulkResponse bulkIndexResponse = mapper.reader().readValue(response.getEntity().getContent(), BulkResponse.class);
 					if(bulkIndexResponse.errors) {
-						LOG.info("Response has errors... not retrying... data will be lost. Sorry about that");
+						for(var a : bulkIndexResponse.items) {
+							if(a.index != null) {
+								var index = a.index;
+								if(index.error != null) {
+									LOG.info("Error {} while inserting document: {}", index.error.type, index.error.reason); 
+								}
+							}
+						}
 					}
 					long elapsed = (System.nanoTime() - startTime) / 1000000;
 					LOG.debug("Sent bulk, time = {} es time {}", elapsed, bulkIndexResponse.took);
