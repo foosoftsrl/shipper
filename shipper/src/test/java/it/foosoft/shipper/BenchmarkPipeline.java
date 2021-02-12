@@ -15,7 +15,7 @@ import it.foosoft.shipper.plugins.DefaultPluginFactory;
 
 public class BenchmarkPipeline {
 
-	private static boolean enableDump = true;
+	private static boolean enableDump = false;
 	private static int count = 0;
 
 	private static final String DISSECT_PIPELINE = "files/dissect.conf";
@@ -28,7 +28,7 @@ public class BenchmarkPipeline {
 	public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
 		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, 
 				Configuration.MINIMAL, 
-				BenchmarkPipeline.class.getResource(CLINK_WITHGROK_PIPELINE));
+				BenchmarkPipeline.class.getResource(CLINK_FULL));
 		pipeline.addOutput(new Output() {
 
 			@Override
@@ -57,7 +57,7 @@ public class BenchmarkPipeline {
 		
 		int lastCount = 0;
 		long lastTime = System.nanoTime();
-		for(int i = 0; i < 600; i++) {
+		for(int i = 0; i < 5; i++) {
 			Thread.sleep(1000);
 			long now = System.nanoTime();
 			int countNow = count;

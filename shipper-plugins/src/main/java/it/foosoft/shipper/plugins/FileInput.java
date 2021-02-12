@@ -12,8 +12,9 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -21,8 +22,6 @@ import java.util.zip.GZIPInputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.jcraft.jsch.ChannelSftp;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Input;
@@ -36,22 +35,22 @@ public class FileInput implements Input {
 	String path;
 
 	@Param
-	Integer olderThan = 30;
-
-	@Param
-	boolean remove = false;
-
-	@Param
 	int threads = 1;
 	
 	@Param
-	int scanPeriod = 60;
+	int discover_interval = 15;
 
 	private InputContext ctx;
 
-	private ScheduledExecutorService executor;
-	
+	// the result of the last scan
+	// only new
 	private Set<Path> lastScan = new HashSet<>();
+
+	// executor which discovers new files
+	private ScheduledExecutorService scanExecutor;
+
+	// executor for file parsing
+	private ExecutorService workerPool;
 
 	private static class Entry {
 		final Path path;
@@ -68,14 +67,43 @@ public class FileInput implements Input {
 
 	@Override
 	public void start() {
-		executor = Executors.newScheduledThreadPool(threads);
-		executor.scheduleWithFixedDelay(this::scan, 0, scanPeriod, TimeUnit.SECONDS);
+		scanExecutor = Executors.newScheduledThreadPool(1);
+		scanExecutor.scheduleWithFixedDelay(this::scan, 0, discover_interval * 500, TimeUnit.MILLISECONDS);
+		workerPool = Executors.newFixedThreadPool(threads);
 	}
 
 	@Override
 	public void stop() {
-		executor.shutdown();
+		stop(false);
 	}
+
+	void stopAndCompleteQueuedJobs() {
+		stop(true);
+	}
+
+	// This method is visible to package for unit testing 
+	private void stop(boolean completeQueuedTasks) {
+		scanExecutor.shutdownNow();
+		try {
+			if(!scanExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+				LOG.warn("Stopping the scanner task took too long, giving up");
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		if(completeQueuedTasks)
+			workerPool.shutdown();
+		else
+			workerPool.shutdownNow();
+		try {
+			if(!workerPool.awaitTermination(5, TimeUnit.SECONDS)) {
+				LOG.warn("Stopping the worker tasks took too long, giving up");
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
 	
 	public void scan() {
 		try {
@@ -91,11 +119,11 @@ public class FileInput implements Input {
 		}
 	}
 
-	private synchronized void updateTaskList(ArrayList<Entry> entries) {
+	private void updateTaskList(ArrayList<Entry> entries) {
 		Set<Path> fileList = new HashSet<>();
 		for(Entry e : entries) {
 		    if(!lastScan.contains(e.path)) {
-		    	executor.submit(()->{
+		    	workerPool.submit(()->{
 		    		download(e);
 		    		return null;
 		    	});
@@ -105,35 +133,44 @@ public class FileInput implements Input {
 		lastScan = fileList;
 	}
 
-	private synchronized void removeTaskFor(Path path) {
-		lastScan.remove(path);
-	}
-
 	private void download(Entry entry) {
 		try {
-			try(InputStream istr = new FileInputStream(entry.path.toFile().getAbsolutePath())) {
-				try(GZIPInputStream gzipIn = new GZIPInputStream(istr)) {
-					try(var reader = new InputStreamReader(gzipIn)) {
-						try(var bufferedReader = new BufferedReader(reader)) {
+			try(InputStream istr = getInputStream(entry)) {
+				try(var reader = new InputStreamReader(istr)) {
+					try(var bufferedReader = new BufferedReader(reader)) {
+						String line;
+						while((line = bufferedReader.readLine()) != null) {
 							Event e = ctx.createEvent();
-							String line;
-							while((line = bufferedReader.readLine()) != null) {
-								e.setField("message", line);
-								ctx.processEvent(e);
-							}
+							e.setField("message", line);
+							ctx.processEvent(e);
 						}
 					}
 				}
 			}
+			Files.deleteIfExists(entry.path);
 		} catch(Exception e) {
-			LOG.error("Failed downloading {} task will be retried", entry.path);
-			removeTaskFor(entry.path);
+			LOG.error("Failed downloading {} task will be retried: {}", entry.path, e.getMessage());
+			// we remove the file from lastScan result
+			// next discovery iteration will retry
+			scanExecutor.submit(()->{
+				lastScan.remove(entry.path);
+			});
 		}
 	}
 
+	private InputStream getInputStream(Entry entry) throws IOException {
+		FileInputStream istr = new FileInputStream(entry.path.toFile().getAbsolutePath());
+		if(entry.path.toFile().getName().endsWith(".gz")) {
+			try {
+				return new GZIPInputStream(istr);
+			} finally {
+				istr.close();
+			}
+		}
+		return istr;
+	}
+
 	
-	LinkedBlockingQueue<ChannelSftp> sftpCache = new LinkedBlockingQueue<ChannelSftp>();
-    
 	private static int compareLastModified(Entry left, Entry right) {
 		return left.lastModified.compareTo(right.lastModified);
 	}
@@ -144,7 +181,7 @@ public class FileInput implements Input {
 			for(Path file: stream) {
 				if(file.getFileName().startsWith("."))
 					continue;
-				if(Files.isDirectory(file, null)) {
+				if(Files.isDirectory(file)) {
 					 recursivelyScanDirectory(file, consumer);
 				}
 				else {
@@ -153,5 +190,10 @@ public class FileInput implements Input {
 				}
 			}
 		}
+	}
+
+	// Test method...
+	void forceScan() throws InterruptedException, ExecutionException {
+		scanExecutor.submit(this::scan).get();
 	}
 }

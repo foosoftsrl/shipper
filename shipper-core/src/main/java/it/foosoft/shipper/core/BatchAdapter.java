@@ -37,6 +37,12 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 
 	@Override
 	public void stop() {
+		try {
+			super.shutdown();
+		} catch (InterruptedException e) {
+			LOG.warn("Interrupted while stopping the queue");
+			Thread.currentThread().interrupt();
+		}
 		batchOutput.stop();
 	}
 

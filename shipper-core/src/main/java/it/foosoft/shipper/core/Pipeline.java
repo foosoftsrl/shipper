@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -47,6 +48,9 @@ public class Pipeline {
 
 	List<InputContext> inputContexts;
 	
+	AtomicInteger inputCounter = new AtomicInteger(0);
+	AtomicInteger outputCounter = new AtomicInteger(0);
+	
 	ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactory() {
 		AtomicInteger id = new AtomicInteger(0);
 		@Override
@@ -79,14 +83,31 @@ public class Pipeline {
 		}
 	}
 
-	public void stop() {
-		executor.shutdownNow();
+	public void stop() throws InterruptedException {
+		// The input know how to stop themselves
 		inputStage.stop();
+		LOG.info("Stopped input stage");
+		// shutdown the queue, this will cause the poller threads to stop
+		queue.shutdown();
+		LOG.info("Stopped input queue");
+		// now wait for the pollers to stop
+		executor.shutdown();
+		if(!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+			LOG.warn("Stopping the filter workers took too long, giving up");
+		} 
+		else {
+			LOG.info("Stopped filter workers");
+		}
+		// stop the filter stage, this is very easy
 		filterStage.stop();
+		LOG.info("Stopped filter stage");
+		// now 
 		outputStage.stop();
+		LOG.info("Stopped output filters");
 	}
 
 	public void processInputEvent(Event e) {
+		inputCounter.incrementAndGet();
 		queue.process(e);
 	}
 	
@@ -94,6 +115,10 @@ public class Pipeline {
 		try {
 			while(true) {
 				List<Event> evtList = queue.dequeue();
+				if(evtList.isEmpty()) {
+					LOG.info("Exiting poller");
+					return;
+				}
 				for(Event evt: evtList) {
 					if(!evt.canceled()) {
 						for(var filter: filterStage) {
@@ -104,6 +129,7 @@ public class Pipeline {
 						for(var output: outputStage) {
 							output.process(evt);
 						}
+						outputCounter.incrementAndGet();
 					}
 				}
 			}
@@ -151,5 +177,12 @@ public class Pipeline {
 		}
 		return null;
 	}
+	
+	public int getInputCounter() {
+		return inputCounter.get();
+	}
 
+	public int getOutputCounter() {
+		return outputCounter.get();
+	}
 }

@@ -2,8 +2,6 @@ package it.foosoft.shipper.plugins;
 
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
-import it.foosoft.shipper.api.InputContext;
-import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
 
@@ -19,8 +17,11 @@ public class DefaultPluginFactory implements PluginManager {
 		if (name.equals("sftp")) {
 			return SftpInput::new;
 		}
-		else if (name.equals("file")) {
+		else if (name.equals("testfile")) {
 			return TestInput::new;
+		}
+		else if (name.equals("file")) {
+			return FileInput::new;
 		}
 		throw new RuntimeException("No such input plugin: " + name);
 	}

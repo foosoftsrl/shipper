@@ -11,6 +11,8 @@ import java.io.Reader;
 import java.net.MalformedURLException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,8 @@ public class TestInput implements Input {
 
 	private InputContext ctx;
 
+	AtomicBoolean stopRequest = new AtomicBoolean(false);
+
 	ExecutorService executor = Executors.newCachedThreadPool(r->{
 		Thread t = new Thread(r);
 		t.setName("FileInput");
@@ -48,7 +52,15 @@ public class TestInput implements Input {
 
 	@Override
 	public void stop() {
+		stopRequest.set(true);
 		executor.shutdown();
+		try {
+			if(!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+				LOG.warn("Stopping the worker task took too long, giving up");
+			}
+		} catch (InterruptedException e) {
+			LOG.warn("Timeout while stopping");
+		}
 	}
 
 	private Object doRead() throws FileNotFoundException, IOException {
@@ -62,10 +74,11 @@ public class TestInput implements Input {
 						ctx.processEvent(evt);
 					}
 				}
-			} while(loop && !Thread.interrupted());
+			} while(loop && !stopRequest.get());
 		} catch(Exception e) {
 			LOG.warn("File thread exiting due to exception {}", e.getMessage());
 		}
+		LOG.info("Exiting cleanly");
 		return null;
 	}
 

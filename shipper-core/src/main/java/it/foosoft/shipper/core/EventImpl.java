@@ -16,6 +16,9 @@ import it.foosoft.shipper.api.Event;
 
 @JsonInclude(Include.NON_NULL)
 public class EventImpl implements Event {
+	// A special kind of event which may be used to notify source drain
+	public static final Event VOID = new EventImpl();
+
 	private long timeStamp;
 
 	private Map<String,Object> fields = new HashMap<>();

@@ -135,9 +135,9 @@ public class SftpInput implements Input {
 				try(GZIPInputStream gzipIn = new GZIPInputStream(istr)) {
 					try(var reader = new InputStreamReader(gzipIn)) {
 						try(var bufferedReader = new BufferedReader(reader)) {
-							Event e = ctx.createEvent();
 							String line;
 							while((line = bufferedReader.readLine()) != null) {
+								Event e = ctx.createEvent();
 								e.setField("message", line);
 								ctx.processEvent(e);
 							}

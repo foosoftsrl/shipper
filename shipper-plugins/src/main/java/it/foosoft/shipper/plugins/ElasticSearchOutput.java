@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -138,13 +139,16 @@ public class ElasticSearchOutput implements BatchOutput {
 		try {
 			while(!Thread.interrupted()) {
 				List<Event> events = ctx.dequeue();
+				if(events.isEmpty()) {
+					break;
+				}
 				sendAndRetry(events);
 			}
 		} catch(Exception e) {
 			LOG.error("Exiting from poller due to exception", e);
 			return null;
 		}
-		LOG.info("Exiting!");
+		LOG.info("Exiting cleanly");
 		return null;
 	}
 	
@@ -183,7 +187,14 @@ public class ElasticSearchOutput implements BatchOutput {
 
 	@Override
 	public void stop() {
-		service.shutdownNow();
+		service.shutdown();
+		try {
+			if(!service.awaitTermination(5, TimeUnit.SECONDS)) {
+				LOG.warn("Stopping the worker tasks took too long, giving up");
+			}
+		} catch (InterruptedException e1) {
+			LOG.warn("Interrupted while waiting for service stop");
+		}
 		try {
 			client.close();
 		} catch(IOException e) {

@@ -3,17 +3,16 @@ package shipper;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
+import it.foosoft.shipper.core.SimpleOutput;
 import it.foosoft.shipper.plugins.DefaultPluginFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -32,11 +31,6 @@ public class Shipper implements Callable<Integer> {
     @Option(names = {"-b", "--batch-size"}, description = "Batch size for filtering and output stage")
     private int batchSize = 512;
 
-    @Option(names = {"-d", "--dump"}, description = "dump debug output")
-    private boolean dump = false;
-
-	private static AtomicInteger counter = new AtomicInteger(0);
-
     public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
         int exitCode = new CommandLine(new Shipper()).execute(args);
         System.exit(exitCode);
@@ -44,40 +38,30 @@ public class Shipper implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-    	Configuration cfg = new Configuration(threadCount, batchSize);
+	    AtomicBoolean stopRequest = new AtomicBoolean(false);
+
+	    Configuration cfg = new Configuration(threadCount, batchSize);
 		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
-		
-		pipeline.addOutput(new Output() {
-			@Override
-			public void process(Event e) {
-				counter.addAndGet(1);
-				if(dump) {
-					try {
-						System.err.println(writer.writeValueAsString(e));
-					} catch (JsonProcessingException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-				}
-			}
-
-			@Override
-			public void start() {
-			}
-
-			@Override
-			public void stop() {
-			}
-		});
-
 		pipeline.start();
-		
+
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+            	synchronized(stopRequest) {
+            		stopRequest.set(true);
+            		stopRequest.notifyAll();
+            	}
+            }
+        });
+
 		int lastCount = 0;
 		long lastTime = System.nanoTime();
-		for(int i = 0; i < 600; i++) {
-			Thread.sleep(1000);
+		while(!stopRequest.get()) {
+			synchronized(stopRequest) {
+				stopRequest.wait(1000);
+			}
 			long now = System.nanoTime();
-			int countNow = counter.get();
+			int countNow = pipeline.getOutputCounter();
 			int processed = countNow - lastCount;
 			double elapsedSecs = (now - lastTime) / 1000000000.0;
 			lastCount = countNow;
@@ -85,7 +69,7 @@ public class Shipper implements Callable<Integer> {
 			System.err.println("processed = " + countNow + " evt/s = " + (processed / elapsedSecs) + " queues = " + pipeline.getQueueSizes());
 		}		
 		pipeline.stop();
-		System.err.println("Happily exiting...");
+		System.err.println("Cleanly exiting...");
 		return 0;
 	}
 }

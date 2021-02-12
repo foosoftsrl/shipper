@@ -1,5 +1,6 @@
 package it.foosoft.shipper.core;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -16,6 +17,7 @@ public class EventQueue implements Output {
 	private int batchSize;
 	private static final Logger LOG = LoggerFactory.getLogger(BatchAdapter.class);
 	public BatchOutput batchOutput;
+	private boolean eof;
 
 	public EventQueue(int batchSize) {
 		this.batchSize = batchSize;
@@ -46,15 +48,27 @@ public class EventQueue implements Output {
 	// much better than synchronized all the callers for each event 
 	public synchronized List<Event> dequeue() {
 		List<Event> list = new ArrayList<>();
+		if(eof)
+			return list;
 		while(list.size() < batchSize) {
 			try {
-				list.add(queue.take());
+				Event evt = queue.take();
+				if(evt == EventImpl.VOID) {
+					LOG.info("Dequeued eof event");
+					eof = true;
+					break;
+				}
+				list.add(evt);
 			} catch(InterruptedException e) {
 				Thread.currentThread().interrupt();
 				break;
 			}
 		}
 		return list;
+	}
+
+	public void shutdown() throws InterruptedException {
+		queue.put(EventImpl.VOID);
 	}
 
 	public int size() {

@@ -1,6 +1,7 @@
 package it.foosoft.shipper;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
@@ -10,7 +11,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.logstash.ConfigLexer;
 import com.logstash.ConfigListener;
@@ -37,8 +38,8 @@ import com.logstash.ConfigParser.Stage_declarationContext;
 import com.logstash.ConfigParser.Stage_definitionContext;
 
 import it.foosoft.shipper.core.Pipeline;
-import it.foosoft.shipper.core.PipelineBuilder;
 import it.foosoft.shipper.core.Pipeline.Configuration;
+import it.foosoft.shipper.core.PipelineBuilder;
 import it.foosoft.shipper.plugins.DefaultPluginFactory;
 
 public class TestPipelineParsing {

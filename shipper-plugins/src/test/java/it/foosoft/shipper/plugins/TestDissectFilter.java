@@ -1,19 +1,19 @@
 package it.foosoft.shipper.plugins;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.EventImpl;
 import it.foosoft.shipper.core.Pipeline;
-import it.foosoft.shipper.core.PipelineBuilder;
 import it.foosoft.shipper.core.Pipeline.Configuration;
+import it.foosoft.shipper.core.PipelineBuilder;
 
 public class TestDissectFilter {
 	@Test
