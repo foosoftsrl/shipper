@@ -1,7 +1,12 @@
 package it.foosoft.shipper.api;
 
-public interface BatchOutput extends Plugin {
-	public interface Factory extends Plugin.Factory {
-		BatchOutput create(OutputContext ctx);
+/**
+ * Interface for batch-oriented outputs (should be used by most plugins) 
+ * @author luca
+ *
+ */
+public interface BatchOutput extends PipelineComponent {
+	public interface Factory extends PipelineComponent.Factory {
+		BatchOutput create(BatchOutputContext ctx);
 	}
 }

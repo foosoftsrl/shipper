@@ -33,20 +33,22 @@ public class ConditionalFilter implements Filter {
 	List<ConditionalBlock> blocks = new ArrayList<>();
 	Stage<Filter> elseStage;
 
+	// Don't know if I should return true or false, or whatever...
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
 		if(e.canceled())
-			return;
+			return true;
 		for(ConditionalBlock block: blocks) {
 			if(block.expr.evaluate(e)) {
 				for(var a : block.stage) {
 					a.process(e);
 					if(e.canceled())
-						return;
+						return true;
 				}
-				return;
+				return true;
 			}
 		}
+		return true;
 	}
 
 	@Override

@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.SequenceWriter;
 
 import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.OutputContext;
+import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.Param;
 import it.foosoft.shipper.plugins.elastic.BulkRequestInputStream;
 
@@ -81,11 +81,11 @@ public class ElasticSearchOutput implements BatchOutput {
 		}
 	});
 
-	private OutputContext ctx;
+	private BatchOutputContext ctx;
 
 	public static BatchOutput.Factory factory = ElasticSearchOutput::new;
 
-	public ElasticSearchOutput(OutputContext ctx) {
+	public ElasticSearchOutput(BatchOutputContext ctx) {
 		this.ctx = ctx;
 	}
 

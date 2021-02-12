@@ -3,44 +3,53 @@ package it.foosoft.shipper.plugins;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Param;
 
 public class UriParseFilter implements Filter {
+	private static final Logger LOG = LoggerFactory.getLogger(UriParseFilter.class);
+	
 	@Param
 	public String source;
 	
 	@Param
 	public String tag_on_failure;
 	
-	@Param
-	public String[] remove_field;
-
 	@Override
-	public void process(Event e) {
-		Object fieldValue = e.getField(source);
+	public boolean process(Event evt) {
+		Object fieldValue = evt.getField(source);
 		if(!(fieldValue instanceof String)) {
-			fail();
+			LOG.warn("Input is not a string...");
+			handleFailure(evt);
+			return false;
 		} else {
 			try {
 				URI uri = new URI((String)fieldValue);
 				if(uri.getHost() != null)
-					e.setField("host", uri.getHost());
+					evt.setField("host", uri.getHost());
 				if(uri.getPath() != null)
-					e.setField("path", uri.getPath());
+					evt.setField("path", uri.getPath());
 				if(uri.getQuery() != null)
-					e.setField("queryString", uri.getQuery());
+					evt.setField("queryString", uri.getQuery());
 				if(uri.getFragment() != null)
-					e.setField("path", uri.getFragment());
+					evt.setField("path", uri.getFragment());
 			} catch (URISyntaxException e1) {
-				fail();
+				handleFailure(evt);
+				LOG.warn("Failed parsing url {}", fieldValue);
+				return false;
 			}
 		}
-		return;
+		return true;
 	}
-
-    private void fail() {
+	
+	public void handleFailure(Event e) {
+		if(tag_on_failure != null) {
+			e.addTag(tag_on_failure);
+		}
 	}
 
 	@Override

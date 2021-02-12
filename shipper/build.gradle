@@ -8,6 +8,8 @@ repositories {
     jcenter()
 }
 
+// I prefer unit tests with files on side
+sourceSets.test.resources.srcDir (['src/test/java','src/test/resources'])
 
 generateGrammarSource {
     maxHeapSize = "64m"

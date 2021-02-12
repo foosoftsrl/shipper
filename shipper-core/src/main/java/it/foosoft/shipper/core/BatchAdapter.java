@@ -8,14 +8,14 @@ import org.slf4j.LoggerFactory;
 import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Output;
-import it.foosoft.shipper.api.OutputContext;
+import it.foosoft.shipper.api.BatchOutputContext;
 
 /**
  * BatchAdapter's will expose a simple "push" interface to the pipeline, and a "pull" OutputContext to the BatchOutput plugin
  *  
  * @author luca
  */
-public class BatchAdapter extends EventQueue implements Output, OutputContext {
+public class BatchAdapter extends EventQueue implements Output, BatchOutputContext {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BatchAdapter.class);
 

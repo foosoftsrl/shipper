@@ -40,31 +40,27 @@ public class UserAgentFilter implements Filter {
 	}
 
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
 		String uaString = e.getFieldAsString(source);
 		if(uaString == null) {
-			fail();
-			return;
+			return false;
 		}
 		Client client = lruMap.computeIfAbsent(uaString, uaString_->{
 			return uaParser.parse(uaString_);
 		});
 		
+		e.setField("userAgent", toMap(client));
+		return true;
+	}
+
+	public static Map<String, String> toMap(Client client) {
 		Map<String,String> userAgent = new HashMap<>();
 		userAgent.put("name", client.userAgent.family);
-
 		userAgent.put("device", client.device.family);
-		
 		userAgent.put("os_name", client.os.family);
 		userAgent.put("os_major", client.os.major);
 		userAgent.put("os_minor", client.os.minor);
-		
-		e.setField("userAgent", userAgent);
-		
-	}
-
-	private void fail() {
-		// TODO: implement me
+		return userAgent;
 	}
 
 }

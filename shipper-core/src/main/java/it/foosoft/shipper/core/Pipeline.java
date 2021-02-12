@@ -140,4 +140,16 @@ public class Pipeline {
 		}
 		return queueSizes;
 	}
+
+	public Filter findFilterById(String id) {
+		for(var filter: filterStage) {
+			if(filter instanceof FilterWrapper) {
+				FilterWrapper wrapper = (FilterWrapper)filter;
+				if(wrapper.getId().equals(id))
+					return wrapper.getInner();
+				}
+		}
+		return null;
+	}
+
 }

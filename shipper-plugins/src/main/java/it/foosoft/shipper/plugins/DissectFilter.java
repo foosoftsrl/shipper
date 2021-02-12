@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 
 import javax.validation.constraints.NotNull;
 
+import org.slf4j.Logger;
+
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.Filter;
@@ -19,6 +21,7 @@ import it.foosoft.shipper.plugins.converters.Converters;
 
 public class DissectFilter implements Filter {
 
+	private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DissectFilter.class);
 	@NotNull
 	public Map<String,String> mapping;
 
@@ -30,8 +33,6 @@ public class DissectFilter implements Filter {
 	
 	public List<EventProcessor> converters = new ArrayList<>();
 	
-	public String[] remove_field = new String[0];
-
 	static class Context {
 		Pattern pattern;
 		List<String> fields = new ArrayList<>();
@@ -40,14 +41,16 @@ public class DissectFilter implements Filter {
 	private Map<String,Context> contexts = new HashMap<>();
 
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
+		boolean successful = true;
 		for(var pattern: contexts.entrySet()) {
 			Object attr = e.getField(pattern.getKey());
 			if(!(attr instanceof String)) {
-				throw new UnsupportedOperationException("Unsupported field type for " + pattern.getKey());
+				LOG.info("Unsupported field type for " + pattern.getKey());
+				successful = false;
+				continue;
 			}
 			String attrString = (String)attr;
-
 			Context context = pattern.getValue();
 
 			Matcher m = context.pattern.matcher(attrString);
@@ -55,14 +58,21 @@ public class DissectFilter implements Filter {
 				for(int i = 0; i < context.fields.size(); i++) {
 					e.setField(context.fields.get(i), m.group(i + 1));
 				}
-				e.removeFields(remove_field);
-
-				for(var converter: converters) {
-					converter.process(e);
-				}
+			} else {
+				successful = false;
 			}
 		}
-		return;
+
+		//mmhhh... what if a converter fails?
+		for(var converter: converters) {
+			converter.process(e);
+		}
+		if(!successful) {
+			if(tag_on_failure != null) {
+				e.addTag(tag_on_failure);
+			}
+		}
+		return successful;
 	}
 
 	@Override

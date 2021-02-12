@@ -5,8 +5,9 @@ import it.foosoft.shipper.api.Filter;
 
 public class DropFilter implements Filter {
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
 		e.cancel();
+		return true;
 	}
 
 	@Override

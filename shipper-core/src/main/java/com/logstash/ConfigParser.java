@@ -1,4 +1,4 @@
-// Generated from Config.g4 by ANTLR 4.9.1
+// Generated from C:\Users\luca\devel\shipper\shipper-core/antlr/Config.g4 by ANTLR 4.9.1
 
 package com.logstash;
 
@@ -131,11 +131,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitConfig(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitConfig(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ConfigContext config() throws RecognitionException {
@@ -192,11 +187,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitStage_declaration(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitStage_declaration(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -258,11 +248,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitStage_definition(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitStage_definition(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -335,11 +320,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitPlugin_declaration(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitPlugin_declaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final Plugin_declarationContext plugin_declaration() throws RecognitionException {
@@ -385,11 +365,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitPlugin_definition(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitPlugin_definition(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -449,11 +424,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitPlugin_attribute(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitPlugin_attribute(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final Plugin_attributeContext plugin_attribute() throws RecognitionException {
@@ -505,11 +475,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitPlugin_attribute_value(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitPlugin_attribute_value(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -607,11 +572,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitStage_condition(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitStage_condition(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -715,11 +675,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitLogical_expression(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitLogical_expression(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -881,11 +836,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitNegative_expression(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitNegative_expression(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final Negative_expressionContext negative_expression() throws RecognitionException {
@@ -939,11 +889,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitCompare_expression(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitCompare_expression(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1054,11 +999,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitIn_expression(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitIn_expression(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final In_expressionContext in_expression() throws RecognitionException {
@@ -1116,11 +1056,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitMatch_expression(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitMatch_expression(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1186,11 +1121,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitRvalue(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitRvalue(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1261,11 +1191,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitFieldref(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitFieldref(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final FieldrefContext fieldref() throws RecognitionException {
@@ -1324,11 +1249,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitFieldref_element(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitFieldref_element(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final Fieldref_elementContext fieldref_element() throws RecognitionException {
@@ -1380,11 +1300,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitArray(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitArray(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1451,11 +1366,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitArray_element(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitArray_element(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1537,11 +1447,6 @@ public class ConfigParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitHash(this);
 		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitHash(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final HashContext hash() throws RecognitionException {
@@ -1601,11 +1506,6 @@ public class ConfigParser extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof ConfigListener ) ((ConfigListener)listener).exitHash_element(this);
-		}
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof ConfigVisitor ) return ((ConfigVisitor<? extends T>)visitor).visitHash_element(this);
-			else return visitor.visitChildren(this);
 		}
 	}
 

@@ -19,7 +19,7 @@ public class TestDissectFilter {
 	@Test
 	public void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/dissect.conf"));
-		DissectFilter filter = (DissectFilter)pipeline.getFilteringStage().get(0);
+		DissectFilter filter = (DissectFilter)pipeline.findFilterById("dissect");
 		filter.start();
 		try(var reader = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("files/vod01.msf.cdn.mediaset.net_20210208222701_219180n2126107.log")))) {
 			String line  = reader.readLine();

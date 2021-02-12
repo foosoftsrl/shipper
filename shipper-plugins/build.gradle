@@ -6,6 +6,10 @@ repositories {
     jcenter()
 }
 
+sourceSets.test.resources {
+    srcDir 'src/test/java'
+}
+
 dependencies {
     api project(path: ":shipper-api")
 

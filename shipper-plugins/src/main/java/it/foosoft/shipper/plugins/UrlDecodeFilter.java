@@ -5,14 +5,16 @@ import java.nio.charset.StandardCharsets;
 
 import javax.validation.constraints.NotNull;
 
-import org.apache.commons.codec.Charsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Param;
 
 public class UrlDecodeFilter implements Filter {
-
+	private static final Logger LOG = LoggerFactory.getLogger(UrlDecodeFilter.class);
+	
 	@NotNull
 	@Param(description="The field to decode")
 	String field;
@@ -20,24 +22,25 @@ public class UrlDecodeFilter implements Filter {
 	URLDecoder urlDecoder = new URLDecoder();
 	
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
 		String s = e.getFieldAsString(field);
-		if(s != null) {
-			// don't know what charset to use
-			e.setField(field, urlDecoder.decode(s, StandardCharsets.UTF_8));
+		if(s == null) {
+			LOG.warn("Field {} is not a string");
+			return false;
 		}
+		// don't know what charset to use
+		e.setField(field, urlDecoder.decode(s, StandardCharsets.UTF_8));
+		return true;
 	}
 
 	@Override
 	public void start() {
-		// TODO Auto-generated method stub
-		
+		// nothing to do
 	}
 
 	@Override
 	public void stop() {
-		// TODO Auto-generated method stub
-		
+		// nothing to do
 	}
 
 	

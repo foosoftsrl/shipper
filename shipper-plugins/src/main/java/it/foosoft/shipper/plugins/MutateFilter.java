@@ -10,9 +10,7 @@ import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Param;
 import it.foosoft.shipper.plugins.converters.Converters;
-import it.foosoft.shipper.plugins.mutate.AddField;
 import it.foosoft.shipper.plugins.mutate.CopyField;
-import it.foosoft.shipper.plugins.mutate.RemoveField;
 
 /**
  * Not very complete implementation of logstash's mutate filter
@@ -21,12 +19,6 @@ import it.foosoft.shipper.plugins.mutate.RemoveField;
  *
  */
 public class MutateFilter implements Filter {
-	@Param
-	public String[] remove_field = new String[0];
-
-	@Param
-	public Map<String,String> add_field = new HashMap<>();
-
 	@Param
 	public String[] gsub = new String[0];
 
@@ -40,9 +32,10 @@ public class MutateFilter implements Filter {
 	
 	
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
 		for(var processor: eventProcessors)
 			processor.process(e);
+		return true;
 	}
 
 	@Override
@@ -57,14 +50,6 @@ public class MutateFilter implements Filter {
 			String sourceField = copyEntry.getKey();
 			String targetField = copyEntry.getValue();
 			eventProcessors.add(new CopyField(sourceField, targetField));
-		}
-		
-		for(var addFieldEntry: add_field.entrySet()) {
-			eventProcessors.add(new AddField(addFieldEntry.getKey(), addFieldEntry.getValue()));
-		}
-
-		for(String s: remove_field) {
-			eventProcessors.add(new RemoveField(s));
 		}
 		
 		for(var s: gsub) {

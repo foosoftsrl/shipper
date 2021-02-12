@@ -1,16 +1,31 @@
 plugins {
     id 'java-library'
-    id 'antlr'
 }
 
 repositories {
     jcenter()
 }
 
-generateGrammarSource {
-    maxHeapSize = "64m"
-    arguments += ["-visitor", "-long-messages"]
-    outputDirectory = new File("src/main/java/com/logstash".toString())
+configurations {
+  antlr
+}
+
+sourceSets.test.resources {
+    srcDir 'src/test/java'
+}
+
+
+// This task is not automatically executed or cleaned or whatever
+// I want the source to be committed. Don't want to fight with Eclipse or whatever 
+task generateParser(type: JavaExec) {
+  def outputDir = "$projectDir/src/main/java/com/logstash"
+  def target = "$projectDir/antlr/Config.g4"
+  
+  classpath = configurations.antlr
+
+  args += ['-o', outputDir, target]
+
+  main = 'org.antlr.v4.Tool'
 }
 
 dependencies {

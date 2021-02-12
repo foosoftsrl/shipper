@@ -39,13 +39,14 @@ public class GrokFilter implements Filter {
 
 	Map<String, Grok> groks;
 	@Override
-	public void process(Event event) {
+	public boolean process(Event event) {
+		boolean successful = true;
 		for(Map.Entry<String,Grok> entry: groks.entrySet()) {
 			var fieldName = entry.getKey();
 			String fieldValue = event.getFieldAsString(fieldName);
 			if(fieldValue == null) {
-				fail();
-				return;
+				successful = false;
+				continue;
 			}
 			var grok = entry.getValue();
 			Match cm = grok.match(fieldValue);
@@ -54,20 +55,10 @@ public class GrokFilter implements Filter {
 				if(capturedField.getValue() != null)
 					event.setField(capturedField.getKey(), capturedField.getValue());
 			}
-			if(false) {
-				try {
-					System.err.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(captured));
-				} catch (JsonProcessingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
 		}
+		return successful;
 	}
 
-	private void fail() {
-		
-	}
 	@Override
 	public void start() {
 		GrokCompiler compiler = GrokCompiler.newInstance();

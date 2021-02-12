@@ -16,16 +16,7 @@ public class FarmUnicaPathFilter implements Filter {
 	private Pattern pattern;
 
 	@Override
-	public void process(Event e) {
-		if(!doProcess(e)) {
-			fail();
-		}
-	}
-
-	private void fail() {
-	}
-
-	public boolean doProcess(Event e) {
+	public boolean process(Event e) {
 		Object attrValueObj = e.getField(source);
 		if(!(attrValueObj instanceof String))
 			return false;

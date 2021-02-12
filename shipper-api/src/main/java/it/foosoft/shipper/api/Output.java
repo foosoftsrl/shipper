@@ -7,7 +7,7 @@ package it.foosoft.shipper.api;
  * @author luca
  *
  */
-public interface Output extends Plugin {
+public interface Output extends PipelineComponent {
 	public interface Factory {
 		Output create();
 	}

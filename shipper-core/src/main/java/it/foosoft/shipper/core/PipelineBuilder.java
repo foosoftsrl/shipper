@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -40,7 +41,7 @@ import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
 import it.foosoft.shipper.api.Output;
-import it.foosoft.shipper.api.Plugin;
+import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.api.RValue;
 import it.foosoft.shipper.core.Pipeline.Configuration;
@@ -73,6 +74,7 @@ public class PipelineBuilder {
 		}
 	}
 	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Objects.requireNonNull(url, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = url.openStream()) {
 			return parser.parse(istr);
@@ -257,19 +259,20 @@ public class PipelineBuilder {
 			};
 			Input input = pluginFactory.createInputPlugin(pluginDecl.IDENTIFIER().getText()).create(ctx);
 			stage.add(input);
-			parsePluginConfig(input, pluginDecl);
+			parsePluginConfig(null, input, pluginDecl);
 		} else if(stageType == StageType.FILTER) {
 			Filter filter = pluginFactory.createFilterPlugin(pluginDecl.IDENTIFIER().getText()).create();
-			stage.add(filter);
-			parsePluginConfig(filter, pluginDecl);
+			FilterWrapper wrapper = new FilterWrapper(filter);
+			parsePluginConfig(wrapper, filter, pluginDecl);
+			stage.add(wrapper);
 		} else {
-			Plugin.Factory outputPlugin = pluginFactory.createOutputPlugin(pluginDecl.IDENTIFIER().getText());
+			PipelineComponent.Factory outputPlugin = pluginFactory.createOutputPlugin(pluginDecl.IDENTIFIER().getText());
 			if(outputPlugin instanceof Output.Factory) {
 				Output plugin = ((Output.Factory)outputPlugin).create();
 				stage.add(outputPlugin);
 			} else if(outputPlugin instanceof BatchOutput.Factory) {
 				BatchAdapter plugin = new BatchAdapter((BatchOutput.Factory)outputPlugin, configuration.batchSize);
-				parsePluginConfig(plugin.batchOutput, pluginDecl);
+				parsePluginConfig(null, plugin.batchOutput, pluginDecl);
 				stage.add(plugin);
 			} else {
 				throw new IllegalArgumentException("Invalid output plugin, must either implement Output or BatchOutput interfaces");
@@ -277,57 +280,65 @@ public class PipelineBuilder {
 		}
 	}
 
-	private void parsePluginConfig(Object plugin, Plugin_declarationContext pluginDecl) throws NoSuchFieldException, IllegalAccessException {
+	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) throws NoSuchFieldException, IllegalAccessException {
 		Plugin_definitionContext pluginDefinition = pluginDecl.plugin_definition();
 		for (Plugin_attributeContext attribute : pluginDefinition.plugin_attribute()) {
-			Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
-			System.err.println("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
-			if (!haveField(plugin.getClass(), attribute.IDENTIFIER().getText())) {
+
+			if (wrapper != null && haveField(wrapper.getClass(), attribute.IDENTIFIER().getText())) {
+				setObjectParameter(wrapper, attribute);
+			} else if(haveField(plugin.getClass(), attribute.IDENTIFIER().getText())) {
+				setObjectParameter(plugin, attribute);
+			} else {
 				throw new RuntimeException("plugin " + pluginDecl.IDENTIFIER() + " has no attribute '"
 						+ attribute.IDENTIFIER().getText() + "'");
 			}
-			Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
-			field.setAccessible(true);
-			if (value.STRING() != null) {
-				field.set(plugin, extractStringContent(value.STRING()));
-			} else if (value.DECIMAL() != null) {
-				field.set(plugin, Integer.parseInt(value.DECIMAL().getText()));
-			} else if (value.array() != null) {
-				List<String> s = new ArrayList<>();
-				for (var item : value.array().array_element()) {
-					if (item.STRING() == null) {
-						throw new RuntimeException("No support for non-string in arrays");
-					}
-					s.add(extractStringContent(item.STRING()));
+		}
+	}
+
+	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException {
+		Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
+		System.err.println("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
+		Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
+		field.setAccessible(true);
+		if (value.STRING() != null) {
+			field.set(plugin, extractStringContent(value.STRING()));
+		} else if (value.DECIMAL() != null) {
+			field.set(plugin, Integer.parseInt(value.DECIMAL().getText()));
+		} else if (value.array() != null) {
+			List<String> s = new ArrayList<>();
+			for (var item : value.array().array_element()) {
+				if (item.STRING() == null) {
+					throw new RuntimeException("No support for non-string in arrays");
 				}
-				field.set(plugin, s.stream().toArray(String[]::new));
-			} else if(value.hash() != null) {
-				HashContext hashCtx = value.hash();
-				Map<String,String> kv = new HashMap<>();
-				for(Hash_elementContext elmCtx: hashCtx.hash_element()) {
-					if(elmCtx.STRING() == null) {
-						throw new UnsupportedOperationException("No support for this hash key type... expected a string");
-					}
-					String hashKey = extractStringContent(elmCtx.STRING());
-					TerminalNode valueNode = elmCtx.plugin_attribute_value().STRING();
-					if(valueNode == null) {
-						throw new UnsupportedOperationException("No support for this hash value type... supporting a string");
-					}
-					kv.put(hashKey, extractStringContent(valueNode));
-				}
-				field.set(plugin, kv);
-			} else if(value.IDENTIFIER() != null) {
-				String identifier = value.IDENTIFIER().getText();
-				if("true".equals(identifier)) {
-					field.set(plugin, true);
-				} else if("false".equals(identifier)) {
-					field.set(plugin, false);
-				} else {
-					throw new UnsupportedOperationException("Unsupported identifier " + identifier);
-				}
-			} else {
-				throw new UnsupportedOperationException("Unsupported plugin type");
+				s.add(extractStringContent(item.STRING()));
 			}
+			field.set(plugin, s.stream().toArray(String[]::new));
+		} else if(value.hash() != null) {
+			HashContext hashCtx = value.hash();
+			Map<String,String> kv = new HashMap<>();
+			for(Hash_elementContext elmCtx: hashCtx.hash_element()) {
+				if(elmCtx.STRING() == null) {
+					throw new UnsupportedOperationException("No support for this hash key type... expected a string");
+				}
+				String hashKey = extractStringContent(elmCtx.STRING());
+				TerminalNode valueNode = elmCtx.plugin_attribute_value().STRING();
+				if(valueNode == null) {
+					throw new UnsupportedOperationException("No support for this hash value type... supporting a string");
+				}
+				kv.put(hashKey, extractStringContent(valueNode));
+			}
+			field.set(plugin, kv);
+		} else if(value.IDENTIFIER() != null) {
+			String identifier = value.IDENTIFIER().getText();
+			if("true".equals(identifier)) {
+				field.set(plugin, true);
+			} else if("false".equals(identifier)) {
+				field.set(plugin, false);
+			} else {
+				throw new UnsupportedOperationException("Unsupported identifier " + identifier);
+			}
+		} else {
+			throw new UnsupportedOperationException("Unsupported plugin type");
 		}
 	}
 

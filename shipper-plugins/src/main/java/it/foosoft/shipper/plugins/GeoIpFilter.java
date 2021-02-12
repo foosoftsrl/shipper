@@ -28,15 +28,17 @@ public class GeoIpFilter implements Filter {
 	private GeoIPFilter geoIpFilter; 
 	
 	@Override
-	public void process(Event e) {
+	public boolean process(Event e) {
 		String sourceField = e.getFieldAsString(source);
 		if(sourceField == null) {
-			return;
+			return false;
 		}
 		if(!geoIpFilter.handleEvent(e)) {
-			e.addTag(tag_on_failure);			
+			if(tag_on_failure != null)
+				e.addTag(tag_on_failure);
+			return false;
 		}
-		return;
+		return true;
 	}
 
 	@Override

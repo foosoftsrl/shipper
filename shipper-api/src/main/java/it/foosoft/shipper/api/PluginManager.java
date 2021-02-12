@@ -1,10 +1,11 @@
 package it.foosoft.shipper.api;
 
 /**
- * Generic Interface for resolving plugins.
+ * A plugin manager is an object capable of plugin discovery.
  * 
  * Production implementations will typically look at classpath, or at plugin directories, but simpler implementation for unit tests
  * are also possible
+ * 
  * 
  * @author luca
  *
@@ -15,6 +16,6 @@ public interface PluginManager {
 
 	Filter.Factory createFilterPlugin(String name);
 
-	Plugin.Factory createOutputPlugin(String name);
+	PipelineComponent.Factory createOutputPlugin(String name);
 
 }

@@ -3,8 +3,8 @@ package it.foosoft.shipper.plugins;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
-import it.foosoft.shipper.api.OutputContext;
-import it.foosoft.shipper.api.Plugin;
+import it.foosoft.shipper.api.BatchOutputContext;
+import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
 
 public class DefaultPluginFactory implements PluginManager {
@@ -55,7 +55,7 @@ public class DefaultPluginFactory implements PluginManager {
 	}
 
 	@Override
-	public Plugin.Factory createOutputPlugin(String name) {
+	public PipelineComponent.Factory createOutputPlugin(String name) {
 		if(name.equals("elasticsearch"))
 			return ElasticSearchOutput.factory;
 		throw new RuntimeException("No such output plugin: " + name);

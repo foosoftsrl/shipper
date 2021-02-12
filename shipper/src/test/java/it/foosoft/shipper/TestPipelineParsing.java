@@ -51,7 +51,7 @@ public class TestPipelineParsing {
 	
 	@Test
 	public void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/conditions.conf"));
+		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
 		assertEquals(1, pipeline.getFilteringStage().size());
 	}
 

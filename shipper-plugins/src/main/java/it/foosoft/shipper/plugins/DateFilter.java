@@ -21,18 +21,15 @@ public class DateFilter implements Filter {
 	@Param
 	public String[] match;
 
-	@Param
-	public String[] remove_field;
-
 	private String fieldName;
 
 	ThreadLocal<SimpleDateFormat> dateParser;	
+
 	@Override
-	public void process(Event evt) {
+	public boolean process(Event evt) {
 		Object obj = evt.getField(fieldName);
 		if(!(obj instanceof String)) {
-			fail();
-			return;
+			return false;
 		}
 		String dateAsText = (String)obj;
 		try {
@@ -40,14 +37,9 @@ public class DateFilter implements Filter {
 			evt.setTimestamp(d);
 		} catch (Exception e) {
 			LOG.info("Failed parsing date {}", dateAsText);
-			fail();
-			return;
+			return false;
 		}
-		evt.removeFields(remove_field);
-		return;
-	}
-
-	private void fail() {
+		return true;
 	}
 
 	@Override

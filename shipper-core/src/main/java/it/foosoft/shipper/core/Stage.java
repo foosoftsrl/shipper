@@ -2,9 +2,9 @@ package it.foosoft.shipper.core;
 
 import java.util.ArrayList;
 
-import it.foosoft.shipper.api.Plugin;
+import it.foosoft.shipper.api.PipelineComponent;
 
-public class Stage<T extends Plugin> extends ArrayList<T> implements Plugin {
+public class Stage<T extends PipelineComponent> extends ArrayList<T> implements PipelineComponent {
 
 	private Pipeline pipeline;
 

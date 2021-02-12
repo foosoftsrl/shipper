@@ -1,4 +1,4 @@
-// Generated from Config.g4 by ANTLR 4.9.1
+// Generated from C:\Users\luca\devel\shipper\shipper-core/antlr/Config.g4 by ANTLR 4.9.1
 
 package com.logstash;
 
