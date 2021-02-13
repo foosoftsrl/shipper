@@ -17,6 +17,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.logstash.ConfigLexer;
 import com.logstash.ConfigParser;
@@ -49,6 +51,8 @@ import it.foosoft.shipper.core.expressions.RegexNotMatchExpression;
 
 public class PipelineBuilder {
 	
+	public static Logger LOG = LoggerFactory.getLogger(PipelineBuilder.class);
+
 	public enum StageType {
 		INPUT,
 		FILTER,
@@ -245,7 +249,7 @@ public class PipelineBuilder {
 
 	private void processPluginDeclaration(Pipeline pipeline, StageType stageType, Plugin_declarationContext pluginDecl)
 			throws NoSuchFieldException, IllegalAccessException {
-		System.err.println(stageType + " plugin " + pluginDecl.IDENTIFIER());
+		LOG.info(stageType + " plugin " + pluginDecl.IDENTIFIER());
 		if(stageType == StageType.INPUT) {
 			Factory inputPlugin = pluginFactory.createInputPlugin(pluginDecl.IDENTIFIER().getText());
 			pipeline.addInput(inputPlugin, input->parsePluginConfig(input, input.wrapped, pluginDecl));
@@ -283,7 +287,7 @@ public class PipelineBuilder {
 
 	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException {
 		Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
-		System.err.println("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
+		LOG.info("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
 		Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
 		field.setAccessible(true);
 		if (value.STRING() != null) {
