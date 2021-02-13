@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -17,6 +20,8 @@ import picocli.CommandLine.Option;
 
 public class Shipper implements Callable<Integer> {
 
+	private static final Logger LOG = LoggerFactory.getLogger(Shipper.class);
+	
 	static ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
 	@Option(names = {"-p", "--pipeline"}, description = "logstash pipeline (single file)")
@@ -65,8 +70,9 @@ public class Shipper implements Callable<Integer> {
 			lastTime = now;
 			System.err.println("processed = " + countNow + " evt/s = " + (processed / elapsedSecs) + " queues = " + pipeline.getQueueSizes());
 		}		
+		LOG.info("Stopping pipeline...");
 		pipeline.stop();
-		System.err.println("Cleanly exiting...");
+		LOG.info("Cleanly exiting...");
 		return 0;
 	}
 }

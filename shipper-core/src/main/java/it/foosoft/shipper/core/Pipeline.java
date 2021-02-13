@@ -144,29 +144,35 @@ public class Pipeline {
 	}
 
 	public void stop() throws InterruptedException {
-		// The input know how to stop themselves
-		inputStage.stop();
-		LOG.info("Stopped input stage");
-
-		// shutdown the queue, this will cause the poller threads to stop
-		queue.shutdown();
-		LOG.info("Stopped input queue");
-		// now wait for the pollers to stop
-		executor.shutdown();
-		if(!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-			LOG.warn("Stopping the filter workers took too long, giving up");
-		} 
-		else {
-			LOG.info("Stopped filter workers");
+		try {
+			// The input know how to stop themselves
+			LOG.info("Stopping input stage");
+			inputStage.stop();
+			LOG.info("Stopped input stage");
+	
+			// shutdown the queue, this will cause the poller threads to stop
+			queue.shutdown();
+			LOG.info("Stopped input queue");
+			// now wait for the pollers to stop
+			executor.shutdown();
+			if(!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+				LOG.warn("Stopping the filter workers took too long, giving up");
+			} 
+			else {
+				LOG.info("Stopped filter workers");
+			}
+			// stop the filter stage, this is very easy
+			filterStage.stop();
+			LOG.info("Stopped filter stage");
+			// now 
+			outputStage.stop();
+			LOG.info("Stopped output filters");
+			
+			savePipelineStatus();
+		} catch(Exception e) {
+			LOG.error("Error while stopping pipeline", e);
+			throw e;
 		}
-		// stop the filter stage, this is very easy
-		filterStage.stop();
-		LOG.info("Stopped filter stage");
-		// now 
-		outputStage.stop();
-		LOG.info("Stopped output filters");
-		
-		savePipelineStatus();
 	}
 
 	private void savePipelineStatus() {
