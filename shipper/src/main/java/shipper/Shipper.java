@@ -46,6 +46,7 @@ public class Shipper implements Callable<Integer> {
 		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
 		pipeline.start();
 
+		Thread mainThread = Thread.currentThread();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
@@ -53,6 +54,11 @@ public class Shipper implements Callable<Integer> {
             		stopRequest.set(true);
             		stopRequest.notifyAll();
             	}
+            	try {
+					mainThread.join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
             }
         });
 
