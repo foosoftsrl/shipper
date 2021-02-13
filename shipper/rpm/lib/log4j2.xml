@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="WARN" shutdownHook="disable">
   <Properties>
     <Property name="app-name">shipper</Property>
-    
   </Properties>
   <Appenders>
     <RollingFile name="RollingFile" fileName="/var/log/${app-name}/${app-name}.log" filePattern="/var/log/${app-name}/${app-name}-%d{yyyy-MM-dd}-%i.log">

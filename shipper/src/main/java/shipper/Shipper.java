@@ -40,7 +40,8 @@ public class Shipper implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-	    AtomicBoolean stopRequest = new AtomicBoolean(false);
+
+    	AtomicBoolean stopRequest = new AtomicBoolean(false);
 	    AtomicBoolean stopped = new AtomicBoolean(false);
 
 	    Configuration cfg = new Configuration(threadCount, batchSize);
