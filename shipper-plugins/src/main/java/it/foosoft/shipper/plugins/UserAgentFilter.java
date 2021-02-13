@@ -21,9 +21,6 @@ public class UserAgentFilter implements Filter {
 	public String regexes;
 
 	@Param
-	public String id;
-	
-	@Param
 	public String target;
 
 	private Parser uaParser;

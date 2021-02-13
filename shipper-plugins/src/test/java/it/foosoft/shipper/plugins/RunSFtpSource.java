@@ -4,22 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.core.AbstractInputContext;
+import it.foosoft.shipper.core.InputContextImpl;
 
 public class RunSFtpSource {
 	public static void main(String[] args) {
 		ObjectWriter mapper = new ObjectMapper().writerWithDefaultPrettyPrinter();
-		AbstractInputContext inputContext = new AbstractInputContext() {
-			@Override
-			public void processEvent(Event e) {
-				try {
-					System.err.println("Here's a line: " + mapper.writeValueAsString(e));
-				} catch (JsonProcessingException e1) {
-					System.err.println("Here's a line... but can't JSON-print int");
-				}
+		InputContextImpl inputContext = new InputContextImpl(evt->{
+			try {
+				System.err.println("Here's a line: " + mapper.writeValueAsString(evt));
+			} catch (JsonProcessingException e1) {
+				System.err.println("Here's a line... but can't JSON-print int");
 			}
-		};
+		});
 		SftpInput input = new SftpInput(inputContext);
 		input.username = "mediaset-logs";
 		input.password = "QMZvTtqXMFJUMyR";

@@ -18,4 +18,26 @@ public interface InputContext extends Context {
 	 * Create an event
 	 */
 	Event createEvent();
+	
+	/**
+	 * Create a bag object which can be used for serialization
+	 * @return
+	 */
+	Bag createBag();
+	
+	/**
+	 * Store a status which will be available for a later restart
+	 * 
+	 * Input filters should use this feature to allow faster stop / start cycles
+	 * 
+	 * @param bag
+	 */
+	void setStopStatus(Bag bag);
+
+	/**
+	 * Get the status previously stored (in a previous execution) 
+	 * 
+	 * @param bag
+	 */
+	Bag getStartStatus();
 }

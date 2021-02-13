@@ -35,11 +35,7 @@ import com.logstash.ConfigParser.Stage_conditionContext;
 import com.logstash.ConfigParser.Stage_declarationContext;
 import com.logstash.ConfigParser.Stage_definitionContext;
 
-import it.foosoft.shipper.api.BatchOutput;
-import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Input;
-import it.foosoft.shipper.api.InputContext;
+import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
@@ -144,7 +140,7 @@ public class PipelineBuilder {
 			}
 			else if(child instanceof Plugin_declarationContext) {
 				var pluginDecl = (Plugin_declarationContext)child;
-				processPluginDeclaration(stage, stageType, pluginDecl);
+				processPluginDeclaration(stage.getPipeline(), stageType, pluginDecl);
 			}
 		}
 	}
@@ -247,51 +243,41 @@ public class PipelineBuilder {
 		throw new UnsupportedOperationException("Unsupported rvalue");
 	}
 
-	private void processPluginDeclaration(Stage stage, StageType stageType, Plugin_declarationContext pluginDecl)
+	private void processPluginDeclaration(Pipeline pipeline, StageType stageType, Plugin_declarationContext pluginDecl)
 			throws NoSuchFieldException, IllegalAccessException {
 		System.err.println(stageType + " plugin " + pluginDecl.IDENTIFIER());
 		if(stageType == StageType.INPUT) {
-			InputContext ctx = new AbstractInputContext() {
-				@Override
-				public void processEvent(Event s) {
-					stage.getPipeline().processInputEvent(s);
-				}
-			};
-			Input input = pluginFactory.createInputPlugin(pluginDecl.IDENTIFIER().getText()).create(ctx);
-			stage.add(input);
-			parsePluginConfig(null, input, pluginDecl);
+			Factory inputPlugin = pluginFactory.createInputPlugin(pluginDecl.IDENTIFIER().getText());
+			pipeline.addInput(inputPlugin, input->parsePluginConfig(input, input.wrapped, pluginDecl));
 		} else if(stageType == StageType.FILTER) {
-			Filter filter = pluginFactory.createFilterPlugin(pluginDecl.IDENTIFIER().getText()).create();
-			FilterWrapper wrapper = new FilterWrapper(filter);
-			parsePluginConfig(wrapper, filter, pluginDecl);
-			stage.add(wrapper);
+			it.foosoft.shipper.api.Filter.Factory filterPlugin = pluginFactory.createFilterPlugin(pluginDecl.IDENTIFIER().getText());
+			FilterWrapper wrapper = pipeline.addFilter(filterPlugin);
+			parsePluginConfig(wrapper, wrapper.getInner(), pluginDecl);
 		} else {
 			PipelineComponent.Factory outputPlugin = pluginFactory.createOutputPlugin(pluginDecl.IDENTIFIER().getText());
-			if(outputPlugin instanceof Output.Factory) {
-				Output plugin = ((Output.Factory)outputPlugin).create();
-				stage.add(outputPlugin);
-			} else if(outputPlugin instanceof BatchOutput.Factory) {
-				BatchAdapter plugin = new BatchAdapter((BatchOutput.Factory)outputPlugin, configuration.batchSize);
-				parsePluginConfig(null, plugin.batchOutput, pluginDecl);
-				stage.add(plugin);
-			} else {
-				throw new IllegalArgumentException("Invalid output plugin, must either implement Output or BatchOutput interfaces");
+			Output output = pipeline.addOutput(outputPlugin);
+			if(output instanceof BatchAdapter) {
+				BatchAdapter adapter = (BatchAdapter)output;
+				parsePluginConfig(null, adapter.innerOutput, pluginDecl);
 			}
 		}
 	}
 
-	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) throws NoSuchFieldException, IllegalAccessException {
+	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) {
 		Plugin_definitionContext pluginDefinition = pluginDecl.plugin_definition();
-		for (Plugin_attributeContext attribute : pluginDefinition.plugin_attribute()) {
-
-			if (wrapper != null && haveField(wrapper.getClass(), attribute.IDENTIFIER().getText())) {
-				setObjectParameter(wrapper, attribute);
-			} else if(haveField(plugin.getClass(), attribute.IDENTIFIER().getText())) {
-				setObjectParameter(plugin, attribute);
-			} else {
-				throw new RuntimeException("plugin " + pluginDecl.IDENTIFIER() + " has no attribute '"
-						+ attribute.IDENTIFIER().getText() + "'");
+		try {
+			for (Plugin_attributeContext attribute : pluginDefinition.plugin_attribute()) {
+				if (wrapper != null && haveField(wrapper.getClass(), attribute.IDENTIFIER().getText())) {
+					setObjectParameter(wrapper, attribute);
+				} else if(haveField(plugin.getClass(), attribute.IDENTIFIER().getText())) {
+					setObjectParameter(plugin, attribute);
+				} else {
+					throw new RuntimeException("plugin " + pluginDecl.IDENTIFIER() + " has no attribute '"
+							+ attribute.IDENTIFIER().getText() + "'");
+				}
 			}
+		} catch(Exception e) {
+			throw new RuntimeException("Failed parsing configuration", e);
 		}
 	}
 

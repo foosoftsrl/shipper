@@ -32,9 +32,6 @@ public class GrokFilter implements Filter {
 	Map<String,String> match = new HashMap<>();
 
 	@Param
-	String id;
-
-	@Param
 	boolean break_on_match;
 
 	Map<String, Grok> groks;

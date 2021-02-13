@@ -19,7 +19,7 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 
 	private static final Logger LOG = LoggerFactory.getLogger(BatchAdapter.class);
 
-	public BatchOutput batchOutput;
+	public BatchOutput innerOutput;
 
 	public BatchAdapter(BatchOutput.Factory outputPlugin) {
 		this(outputPlugin, 512);
@@ -27,12 +27,12 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 	
 	public BatchAdapter(BatchOutput.Factory batchOutputFactory, int batchSize) {
 		super(batchSize);
-		this.batchOutput = batchOutputFactory.create(this);
+		this.innerOutput = batchOutputFactory.create(this);
 	}
 
 	@Override
 	public void start() {
-		batchOutput.start();
+		innerOutput.start();
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 			LOG.warn("Interrupted while stopping the queue");
 			Thread.currentThread().interrupt();
 		}
-		batchOutput.stop();
+		innerOutput.stop();
 	}
 
 }

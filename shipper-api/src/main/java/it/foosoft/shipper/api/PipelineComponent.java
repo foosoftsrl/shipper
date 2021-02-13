@@ -20,8 +20,11 @@ public interface PipelineComponent {
 	public void start();
 
 	/**
-	 * Stop component. Any ongoing activity must be interrupted
+	 * Stop component. Any ongoing activity must be interrupted.
+	 * 
+	 * @return a possibly null state which can be used to restart  
 	 */
 	public void stop();
+
 }
 

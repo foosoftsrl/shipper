@@ -1,5 +1,8 @@
 package it.foosoft.shipper.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,17 +11,27 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import it.foosoft.shipper.api.Bag;
+import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
+import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.InputContext;
 import it.foosoft.shipper.api.Output;
 
 public class Pipeline {
+	private static final String PIPELINE_STATUS_PATH = "/var/lib/shipper/status";
+
 	private static final Logger LOG = LoggerFactory.getLogger(Pipeline.class);
 
 	public static class Configuration {
@@ -46,7 +59,7 @@ public class Pipeline {
 
 	Stage<Output> outputStage = new Stage<>(this);
 
-	List<InputContext> inputContexts;
+	List<InputContext> inputContexts = new ArrayList<>();
 	
 	AtomicInteger inputCounter = new AtomicInteger(0);
 	AtomicInteger outputCounter = new AtomicInteger(0);
@@ -65,9 +78,56 @@ public class Pipeline {
 
 	private Configuration configuration;
 
-	Pipeline(Configuration conf) {
+	private BagImpl startupConfig = new BagImpl();
+
+	Pipeline(Configuration conf) throws JsonParseException, JsonMappingException, IOException {
 		this.configuration = conf;
 		queue = new EventQueue(conf.batchSize);
+		try {
+			File src = new File(PIPELINE_STATUS_PATH);
+			if(src.exists())
+				startupConfig = new ObjectMapper().readValue(src, BagImpl.class);
+		} catch(Exception e) {
+			LOG.warn("Can't load retrieved state");
+		}
+	}
+
+	public void addInput(Factory inputPlugin, Consumer<InputWrapper> configurator) {
+		InputContextImpl ctx = new InputContextImpl(evt->{
+			processInputEvent(evt);
+		});
+		inputContexts.add(ctx);
+		Input input = inputPlugin.create(ctx);
+		InputWrapper wrapper = new InputWrapper(input);
+		configurator.accept(wrapper);
+		inputStage.add(input);
+		if(wrapper.getId() != null) {
+			Bag props = startupConfig.getBagProperty(wrapper.getId());
+			if(props != null) {
+				ctx.setStartStatus(props);
+			}
+		}
+	}
+
+	public Output addOutput(it.foosoft.shipper.api.PipelineComponent.Factory outputPlugin) {
+		if(outputPlugin instanceof Output.Factory) {
+			Output plugin = ((Output.Factory)outputPlugin).create();
+			outputStage.add(plugin);
+			return plugin;
+		} else if(outputPlugin instanceof BatchOutput.Factory) {
+			BatchAdapter plugin = new BatchAdapter((BatchOutput.Factory)outputPlugin, configuration.batchSize);
+			outputStage.add(plugin);
+			return plugin;
+		} else {
+			throw new IllegalArgumentException("Invalid output plugin, must either implement Output or BatchOutput interfaces");
+		}
+	}
+
+	public FilterWrapper addFilter(it.foosoft.shipper.api.Filter.Factory filterPlugin) {
+		Filter filter = filterPlugin.create();
+		FilterWrapper wrapper = new FilterWrapper(filter);
+		filterStage.add(wrapper);
+		return wrapper;
 	}
 
 	public void start() {
@@ -87,6 +147,7 @@ public class Pipeline {
 		// The input know how to stop themselves
 		inputStage.stop();
 		LOG.info("Stopped input stage");
+
 		// shutdown the queue, this will cause the poller threads to stop
 		queue.shutdown();
 		LOG.info("Stopped input queue");
@@ -185,4 +246,6 @@ public class Pipeline {
 	public int getOutputCounter() {
 		return outputCounter.get();
 	}
+
+
 }

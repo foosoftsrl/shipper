@@ -11,15 +11,14 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -29,6 +28,7 @@ import javax.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.foosoft.shipper.api.Bag;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
@@ -45,7 +45,6 @@ public class FileInput implements Input {
     	return globExpression;
     }
 	
-
     @NotNull
 	@Param
 	String path;
@@ -59,30 +58,119 @@ public class FileInput implements Input {
 	private InputContext ctx;
 
 	// the result of the last scan
-	// only new
 	private Set<Path> lastScan = new HashSet<>();
+
+	// The files queued for download
+	private LinkedBlockingQueue<Entry> taskQueue = new LinkedBlockingQueue<>();
 
 	// executor which discovers new files
 	private ScheduledExecutorService scanExecutor;
-
-	// executor for file parsing
-	private ExecutorService workerPool;
 
 	private Pattern pattern;
 
 	private Path baseDir;
 
+	List<Worker> workers = new ArrayList<>();
+	
 	private static class Entry {
+		public static Entry STOP = new Entry(null, null);
 		final Path path;
 		final FileTime lastModified;
+		final int startOffset;
 		Entry(Path file, FileTime fileTime) {
+			this(file, fileTime, 0);
+		}
+		Entry(Path file, FileTime fileTime, int startOffset) {
 			this.path = file;
 			this.lastModified = fileTime;
+			this.startOffset = startOffset;
 		}
 	}
 
 	public FileInput(InputContext ctx) {
 		this.ctx = ctx;
+	}
+
+	class Worker {
+		private Thread thread;
+		private Entry currentEntry;
+		public AtomicBoolean stop = new AtomicBoolean();
+		public Worker() {
+			thread = new Thread(()->{
+				try {
+					run();
+				} catch (InterruptedException e) {
+					LOG.info("Worker exiting on unexpected interrupted exception");
+				}
+			});
+			thread.start();
+		}
+
+		public void stop() throws InterruptedException {
+			stop.set(true);
+			thread.join();
+		}
+
+		private void run() throws InterruptedException {
+			while(true) {
+				var entry = taskQueue.take();
+				if(entry == Entry.STOP || stop.get()) {
+					return;
+				}
+				download(entry);
+			}
+		}
+
+		private void download(Entry entry) {
+			currentEntry = entry;
+			int currentLine = 0;
+			try {
+				try(InputStream istr = getInputStream(entry)) {
+					try(var reader = new InputStreamReader(istr)) {
+						try(var bufferedReader = new BufferedReader(reader)) {
+							String line;
+							while((line = bufferedReader.readLine()) != null && !stop.get()) {
+								if(currentLine < entry.startOffset) {
+									LOG.debug("Skipping already processed line");
+								} else {
+									Event e = ctx.createEvent();
+									e.setField("message", line);
+									ctx.processEvent(e);
+								}
+								currentLine++;
+							}
+							// if we arrived here on a stop request and we re
+							if(stop.get()) {
+								int restartLine = Math.max(currentLine, entry.startOffset);
+								currentEntry = new Entry(currentEntry.path, currentEntry.lastModified, restartLine); 
+							} else {
+								currentEntry = null; 
+								Files.deleteIfExists(entry.path);
+								return;
+							}
+						}
+					}
+				}
+			} catch(Exception e) {
+				LOG.error("Failed processing file {}. Leaving it on disk", entry.path, e);
+				currentEntry = null; 
+			}
+		}
+
+
+		// Create a possibly de-compressing input stream for an entry 
+		private InputStream getInputStream(Entry entry) throws IOException {
+			FileInputStream istr = new FileInputStream(entry.path.toFile().getAbsolutePath());
+			if(entry.path.toFile().getName().endsWith(".gz")) {
+				try {
+					return new GZIPInputStream(istr);
+				} catch(IOException e) {
+					istr.close();
+					throw e;
+				}
+			}
+			return istr;
+		}
 	}
 
 	@Override
@@ -94,6 +182,21 @@ public class FileInput implements Input {
 		if(pos < 0) {
 			throw new IllegalArgumentException("the path parameter should have a wildcard, or something like that");
 		}
+		Bag bag = ctx.getStartStatus();
+		if(bag != null) {
+			Bag progressBag = bag.getBagProperty("progress");
+			if(progressBag != null) {
+				for(String fileName:progressBag.getPropertyNames()) {
+					Long l = progressBag.getNumericProperty(fileName);
+					if(l != null) {
+						Entry entry = new Entry(Path.of(fileName), null, l.intValue());
+						taskQueue.add(entry);
+						lastScan.add(entry.path);
+					}
+				}
+			}
+		}
+
 		baseDir = Path.of(path.substring(0,pos));
 		String filter = path.substring(pos);
 		String filterRegex = antGlobToRegexp(filter);
@@ -101,23 +204,9 @@ public class FileInput implements Input {
 		scanExecutor = Executors.newScheduledThreadPool(1);
 		scanExecutor.scheduleWithFixedDelay(this::scan, 0, discover_interval * 500, TimeUnit.MILLISECONDS);
 
-		// We do not want the thread to be interrupted...
-		workerPool = new ThreadPoolExecutor(threads, threads,
-                        0L, TimeUnit.MILLISECONDS,
-                        new LinkedBlockingQueue<Runnable>(),
-                        new ThreadFactory() {
-							
-							@Override
-							public Thread newThread(Runnable r) {
-								return new Thread(r) {
-									@Override
-									public void interrupt() {
-										// do nothing
-									}
-								};
-							}
-						});
-				Executors.newFixedThreadPool(threads);
+		for(int i = 0; i < threads; i++) {
+			workers.add(new Worker());
+		}
 	}
 
 	@Override
@@ -129,6 +218,29 @@ public class FileInput implements Input {
 		stop(true);
 	}
 
+	/*
+	 * Will create a bag such as 
+	 * {
+	 *   "progress" : {
+	 *     "/path/to/file": xxxx
+	 *   }
+	 * }
+	 * 
+	 * where xxxx is a line number
+	 */
+	public Bag computeStopStatus() {
+		Bag bag = ctx.createBag();
+		Bag progressBag = ctx.createBag();
+		bag.setBagProperty("progress", progressBag);
+		for(Worker worker: workers) {
+			Entry currentEntry = worker.currentEntry;
+			if(currentEntry != null) {
+				progressBag.setNumericProperty(currentEntry.path.toString(), currentEntry.startOffset);
+				LOG.info("Saving line position {} for file {}", currentEntry.startOffset, currentEntry.path);
+			}
+		}
+		return null;
+	}
 	// This method is visible to package for unit testing 
 	private void stop(boolean completeQueuedTasks) {
 		scanExecutor.shutdownNow();
@@ -141,20 +253,22 @@ public class FileInput implements Input {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		if(completeQueuedTasks)
-			workerPool.shutdown();
-		else
-			workerPool.shutdownNow();
-		try {
-			if(!workerPool.awaitTermination(120, TimeUnit.SECONDS)) {
-				LOG.warn("Stopping the worker tasks took too long, giving up");
-			} else {
-				LOG.info("Stopped file readers");
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+
+		// Queue an Entry.Stop event for each worker, they will take (at most) one each
+		for(int i = 0; i < workers.size(); i++) {
+			taskQueue.add(Entry.STOP);
 		}
-		LOG.info("Stopped direcory scanner");
+
+		// Now we can stop the workers, they may be blocked for a while until downStream un-freezes
+		for(var worker : workers) {
+			try {
+				worker.stop();
+				LOG.info("Stopped worker");
+			} catch (InterruptedException e) {
+				LOG.error("Failed stopping worker");
+			}
+		}
+		ctx.setStopStatus(computeStopStatus());
 	}
 
 	
@@ -172,59 +286,17 @@ public class FileInput implements Input {
 		}
 	}
 
-	private void updateTaskList(ArrayList<Entry> entries) {
+	private void updateTaskList(ArrayList<Entry> entries) throws InterruptedException {
 		Set<Path> fileList = new HashSet<>();
 		for(Entry e : entries) {
 		    if(!lastScan.contains(e.path)) {
-		    	workerPool.submit(()->{
-		    		download(e);
-		    		return null;
-		    	});
+		    	taskQueue.put(e);
 		    }
 	    	fileList.add(e.path);
 		}
 		lastScan = fileList;
 	}
 
-	private void download(Entry entry) {
-		try {
-			try(InputStream istr = getInputStream(entry)) {
-				try(var reader = new InputStreamReader(istr)) {
-					try(var bufferedReader = new BufferedReader(reader)) {
-						String line;
-						while((line = bufferedReader.readLine()) != null) {
-							Event e = ctx.createEvent();
-							e.setField("message", line);
-							ctx.processEvent(e);
-						}
-					}
-				}
-			}
-			Files.deleteIfExists(entry.path);
-		} catch(Exception e) {
-			LOG.error("Failed processing file {}", entry.path, e);
-			// we remove the file from lastScan result
-			// next discovery iteration will retry
-			scanExecutor.submit(()->{
-				lastScan.remove(entry.path);
-			});
-		}
-	}
-
-	private InputStream getInputStream(Entry entry) throws IOException {
-		FileInputStream istr = new FileInputStream(entry.path.toFile().getAbsolutePath());
-		if(entry.path.toFile().getName().endsWith(".gz")) {
-			try {
-				return new GZIPInputStream(istr);
-			} catch(IOException e) {
-				istr.close();
-				throw e;
-			}
-		}
-		return istr;
-	}
-
-	
 	private static int compareLastModified(Entry left, Entry right) {
 		return left.lastModified.compareTo(right.lastModified);
 	}
