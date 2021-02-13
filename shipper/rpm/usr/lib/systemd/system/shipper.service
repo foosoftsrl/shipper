@@ -1,8 +1,9 @@
 [Service]
-ExecStart=/bin/sh -c '${JAVA} ${JAVA_ARGS} -cp "lib:plugins/*" -jar shipper-fat.jar'
+ExecStart=/bin/sh -c '${JAVA} -Dlog4j2.configurationFile=${LOG_CONFIG_PATH} ${JAVA_ARGS} -cp "lib:plugins/*" -jar shipper-fat.jar'
 User=shipper
 Type=simple
 WorkingDirectory=/usr/share/shipper
+Environment=LOG_CONFIG_PATH=log4j2.xml
 Environment=JAVA=/usr/lib/jvm/adoptopenjdk-15-hotspot-jre/bin/java
 EnvironmentFile=-/etc/sysconfig/shipper
 
