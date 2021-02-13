@@ -64,6 +64,7 @@ public class Shipper implements Callable<Integer> {
 						}
             		}
             	}
+    			LOG.info("Shutdown hook completed");
             }
         });
 
@@ -86,6 +87,8 @@ public class Shipper implements Callable<Integer> {
 			LOG.info("Stopping pipeline...");
 			pipeline.stop();
 			LOG.info("Cleanly exiting...");
+		} catch(Exception e) {
+			LOG.error("Exiting with exception", e);
 		} finally {
 			synchronized(stopped) {
 				stopped.set(true);
