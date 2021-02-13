@@ -6,18 +6,24 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import it.foosoft.shipper.api.Bag;
 
 public class BagImpl implements Bag {
 
-	final Map<Object,Object> map; 
+	final Map<Object,Object> map = new HashMap<>(); 
 	BagImpl() {
-		this(new HashMap<>());
 	}
 
 	BagImpl(Map<Object,Object> map) {
-		this.map = map;
+		for(Map.Entry<Object, Object> entry : map.entrySet()) {
+			if(entry.getValue() instanceof Map) {
+				this.map.put(entry.getKey(), new BagImpl((Map)entry.getValue()));
+			} else {
+				this.map.put(entry.getKey(), entry.getValue());
+			}
+		}
 	}
 
 	@Override
@@ -76,6 +82,7 @@ public class BagImpl implements Bag {
 		}
 	}
 
+	@JsonIgnore
 	@Override
 	public Set<String> getPropertyNames() {
 		return (Set)map.keySet();

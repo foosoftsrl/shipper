@@ -11,6 +11,7 @@ public class InputContextImpl implements InputContext {
 	private EventProcessor processor;
 	private Bag stopStatus;
 	private Bag startStatus;
+	private String id;
 
 	public InputContextImpl(@NotNull EventProcessor processor) {
 		this(processor, null);
@@ -51,7 +52,16 @@ public class InputContextImpl implements InputContext {
 	}
 
 	public void setStartStatus(Bag props) {
-		// TODO Auto-generated method stub
+		this.startStatus = props;
+		
+	}
+
+	public String getId() {
+		return this.id;
+		
+	}
+	public void setId(String filterId) {
+		this.id = filterId;
 		
 	}
 	

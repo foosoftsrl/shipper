@@ -203,7 +203,28 @@ public class FileInput implements Input {
 		pattern = Pattern.compile(filterRegex);
 		scanExecutor = Executors.newScheduledThreadPool(1);
 		scanExecutor.scheduleWithFixedDelay(this::scan, 0, discover_interval * 500, TimeUnit.MILLISECONDS);
-
+		
+		Bag startStartus = ctx.getStartStatus();
+		if(startStartus != null) {
+			Bag progress = bag.getBagProperty("progress");
+			if(progress != null) {
+				for(String pathStr: progress.getPropertyNames()) {
+					Long idx = progress.getNumericProperty(pathStr);
+					if(idx != null) {
+						Path path = Path.of(pathStr);
+						try {
+							Entry entry = new Entry(path, Files.getLastModifiedTime(path), idx.intValue());
+							lastScan.add(entry.path);
+							taskQueue.add(entry);
+							LOG.info("Restarting {} @ {}", entry.path, idx);
+						} catch (IOException e) {
+							LOG.warn("Unprocessable restart entry: {}", path);
+						}
+					}
+				}
+			}
+		}
+		
 		for(int i = 0; i < threads; i++) {
 			workers.add(new Worker());
 		}
@@ -239,7 +260,7 @@ public class FileInput implements Input {
 				LOG.info("Saving line position {} for file {}", currentEntry.startOffset, currentEntry.path);
 			}
 		}
-		return null;
+		return bag;
 	}
 	// This method is visible to package for unit testing 
 	private void stop(boolean completeQueuedTasks) {

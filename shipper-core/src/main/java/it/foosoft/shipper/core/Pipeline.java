@@ -26,7 +26,6 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.Input.Factory;
-import it.foosoft.shipper.api.InputContext;
 import it.foosoft.shipper.api.Output;
 
 public class Pipeline {
@@ -59,7 +58,7 @@ public class Pipeline {
 
 	Stage<Output> outputStage = new Stage<>(this);
 
-	List<InputContext> inputContexts = new ArrayList<>();
+	List<InputContextImpl> inputContexts = new ArrayList<>();
 	
 	AtomicInteger inputCounter = new AtomicInteger(0);
 	AtomicInteger outputCounter = new AtomicInteger(0);
@@ -101,6 +100,7 @@ public class Pipeline {
 		InputWrapper wrapper = new InputWrapper(input);
 		configurator.accept(wrapper);
 		inputStage.add(input);
+		ctx.setId(wrapper.getId());
 		if(wrapper.getId() != null) {
 			Bag props = startupConfig.getBagProperty(wrapper.getId());
 			if(props != null) {
@@ -165,6 +165,23 @@ public class Pipeline {
 		// now 
 		outputStage.stop();
 		LOG.info("Stopped output filters");
+		
+		savePipelineStatus();
+	}
+
+	private void savePipelineStatus() {
+		BagImpl bag = new BagImpl();
+		for(var inputCtx: inputContexts) {
+			if(inputCtx.getId() != null && inputCtx.getStopStatus() != null) {
+				bag.setBagProperty(inputCtx.getId(), inputCtx.getStopStatus());
+			}
+		}
+		try {
+			File src = new File(PIPELINE_STATUS_PATH);
+			new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(src, bag);
+		} catch(Exception e) {
+			LOG.warn("Can't save filter state: " + e.getMessage());
+		}
 	}
 
 	public void processInputEvent(Event e) {
