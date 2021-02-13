@@ -200,7 +200,12 @@ public class Pipeline {
 				for(Event evt: evtList) {
 					if(!evt.canceled()) {
 						for(var filter: filterStage) {
-							filter.process(evt);
+							try {
+								filter.process(evt);
+							} catch(Exception e) {
+								LOG.error("Canceling event due to processing failure. Probably, a filter misbehaving", e);
+								evt.cancel();
+							}
 							if(evt.canceled())
 								break;
 						}

@@ -213,12 +213,15 @@ public class FileInput implements Input {
 					if(idx != null) {
 						Path path = Path.of(pathStr);
 						try {
+							// We put an entry both in lastScan, to avoid an entry to be recreated
+							// and in the taskQueue, in order to have the entry executed
+							// as soon as the workers start
 							Entry entry = new Entry(path, Files.getLastModifiedTime(path), idx.intValue());
 							lastScan.add(entry.path);
 							taskQueue.add(entry);
 							LOG.info("Restarting {} @ {}", entry.path, idx);
 						} catch (IOException e) {
-							LOG.warn("Unprocessable restart entry: {}", path);
+							LOG.warn("Unprocessable restart entry: {}", path, e);
 						}
 					}
 				}
