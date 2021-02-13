@@ -41,12 +41,12 @@ public class Shipper implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 	    AtomicBoolean stopRequest = new AtomicBoolean(false);
+	    AtomicBoolean stopped = new AtomicBoolean(false);
 
 	    Configuration cfg = new Configuration(threadCount, batchSize);
 		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
 		pipeline.start();
 
-		Thread mainThread = Thread.currentThread();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
@@ -54,31 +54,44 @@ public class Shipper implements Callable<Integer> {
             		stopRequest.set(true);
             		stopRequest.notifyAll();
             	}
-            	try {
-					mainThread.join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+            	synchronized(stopped) {
+            		while(!stopped.get()) {
+            			LOG.info("Waiting for main thread...");
+        				try {
+							stopped.wait(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+            		}
+            	}
             }
         });
 
-		int lastCount = 0;
-		long lastTime = System.nanoTime();
-		while(!stopRequest.get()) {
-			synchronized(stopRequest) {
-				stopRequest.wait(1000);
+		
+		try {
+			int lastCount = 0;
+			long lastTime = System.nanoTime();
+			while(!stopRequest.get()) {
+				synchronized(stopRequest) {
+					stopRequest.wait(1000);
+				}
+				long now = System.nanoTime();
+				int countNow = pipeline.getOutputCounter();
+				int processed = countNow - lastCount;
+				double elapsedSecs = (now - lastTime) / 1000000000.0;
+				lastCount = countNow;
+				lastTime = now;
+				System.err.println("processed = " + countNow + " evt/s = " + (processed / elapsedSecs) + " queues = " + pipeline.getQueueSizes());
+			}		
+			LOG.info("Stopping pipeline...");
+			pipeline.stop();
+			LOG.info("Cleanly exiting...");
+		} finally {
+			synchronized(stopped) {
+				stopped.set(true);
+				stopped.notifyAll();
 			}
-			long now = System.nanoTime();
-			int countNow = pipeline.getOutputCounter();
-			int processed = countNow - lastCount;
-			double elapsedSecs = (now - lastTime) / 1000000000.0;
-			lastCount = countNow;
-			lastTime = now;
-			System.err.println("processed = " + countNow + " evt/s = " + (processed / elapsedSecs) + " queues = " + pipeline.getQueueSizes());
-		}		
-		LOG.info("Stopping pipeline...");
-		pipeline.stop();
-		LOG.info("Cleanly exiting...");
+		}
 		return 0;
 	}
 }
