@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections4.map.LRUMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
@@ -14,6 +16,7 @@ import ua_parser.Parser;
 
 public class UserAgentFilter implements Filter {
 
+	private static final Logger LOG = LoggerFactory.getLogger(UserAgentFilter.class);
 	@Param(description="name of the field to parse")
 	public String source;
 	
@@ -25,7 +28,7 @@ public class UserAgentFilter implements Filter {
 
 	private Parser uaParser;
 
-	Map<String, Client> lruMap = Collections.synchronizedMap(new LRUMap<>(4096));
+	Map<String, Client> lruMap = Collections.synchronizedMap(new LRUMap<>(65536));
 
 	@Override
 	public void start() {
@@ -43,6 +46,7 @@ public class UserAgentFilter implements Filter {
 			return false;
 		}
 		Client client = lruMap.computeIfAbsent(uaString, uaString_->{
+			//LOG.info("Computing damned user agent, size = " + lruMap.size());
 			return uaParser.parse(uaString_);
 		});
 		
