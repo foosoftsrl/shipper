@@ -208,10 +208,12 @@ public class Pipeline {
 							if(evt.canceled())
 								break;
 						}
-						for(var output: outputStage) {
-							output.process(evt);
+						if(!evt.canceled()) {
+							for(var output: outputStage) {
+								output.process(evt);
+							}
+							outputCounter.incrementAndGet();
 						}
-						outputCounter.incrementAndGet();
 					}
 				}
 			}
