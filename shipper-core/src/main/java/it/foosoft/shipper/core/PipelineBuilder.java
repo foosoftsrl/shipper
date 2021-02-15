@@ -81,6 +81,12 @@ public class PipelineBuilder {
 		}
 	}
 
+	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Objects.requireNonNull(istr, "Invalid null URL specified");
+		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
+		return parser.doParse(istr);
+	}
+
 	private Pipeline doParse(InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Pipeline pipeline = new Pipeline(configuration);
 		ConfigLexer lexer = new ConfigLexer(CharStreams.fromStream(istr));

@@ -2,21 +2,22 @@ package it.foosoft.shipper.plugins.mutate;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
+import it.foosoft.shipper.plugins.FieldRef;
 
 public class CopyField implements EventProcessor {
 
-	private String sourceField;
-	private String targetField;
+	private FieldRef sourceField;
+	private FieldRef targetField;
 
-	public CopyField(String sourceField, String targetField) {
+	public CopyField(FieldRef sourceField, FieldRef targetField) {
 		this.sourceField = sourceField;
 		this.targetField = targetField;
 	}
 
 	@Override
 	public void process(Event e) {
-		Object attr = e.getField(sourceField);
-		e.setField(targetField, attr);
+		Object value = sourceField.get(e);
+		targetField.set(e, value);
 	}
 
 }

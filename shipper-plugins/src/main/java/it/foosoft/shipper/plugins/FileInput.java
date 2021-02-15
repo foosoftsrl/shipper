@@ -49,7 +49,16 @@ public class FileInput implements Input {
 	@Param
 	String path;
 
-	@Param
+    @Param
+    String file_completed_action = "delete";
+
+    @Param
+	String mode;
+
+    @Param
+	Object sincedb_clean_after;
+
+    @Param
 	int threads = 1;
 	
 	@Param
@@ -177,6 +186,12 @@ public class FileInput implements Input {
 	public void start() {
 		if(path == null) {
 			throw new IllegalArgumentException("missing path parameter");
+		}
+		if(!"read".equals(mode)) {
+			throw new IllegalArgumentException("only read mode is supported");
+		}
+		if(!"delete".equals(file_completed_action)) {
+			throw new IllegalArgumentException("only delete is supported for file_complete_action");
 		}
 		int pos = path.indexOf("*");
 		if(pos < 0) {

@@ -1,16 +1,29 @@
 package shipper;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import it.foosoft.shipper.core.FileWalker;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
@@ -24,10 +37,13 @@ public class Shipper implements Callable<Integer> {
 	
 	static ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
-	@Option(names = {"-p", "--pipeline"}, description = "logstash pipeline (single file)")
-    private File pipelineFile = new File("/etc/shipper/pipeline");
+	@Option(names = {"-p", "--pipeline"}, description = "logstash pipeline (single file), overrides --pipelines")
+    private File pipelineFile = null;
 	
-    @Option(names = {"-t", "--thread-count"}, description = "Threads used for filtering stage")
+	@Option(names = {"--pipelines"}, description = "logstash pipelines")
+    private File pipelinesFile = new File("/etc/shipper/pipelines.yml");
+
+	@Option(names = {"-t", "--thread-count"}, description = "Threads used for filtering stage")
     private int threadCount = Runtime.getRuntime().availableProcessors();
 
     @Option(names = {"-b", "--batch-size"}, description = "Batch size for filtering and output stage")
@@ -38,14 +54,47 @@ public class Shipper implements Callable<Integer> {
         System.exit(exitCode);
     }
 
-    @Override
+    
+	public static class PipelineCfg {
+		@JsonProperty("pipeline.id")
+		String id;
+		@JsonProperty("path.config")
+		String path;
+	}
+
+	@Override
     public Integer call() throws Exception {
+
 
     	AtomicBoolean stopRequest = new AtomicBoolean(false);
 	    AtomicBoolean stopped = new AtomicBoolean(false);
-
+	    
 	    Configuration cfg = new Configuration(threadCount, batchSize);
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
+	    Pipeline pipeline = null;
+	    
+	    if(pipelineFile != null) {
+		    pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
+	    } else {
+		    ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+		    PipelineCfg[] pipelines = mapper.readValue(pipelinesFile, PipelineCfg[].class);
+		    if(pipelines.length != 1) {
+		    	throw new UnsupportedOperationException("Just support for 1 pipeline, sorry");
+		    }
+		    byte[] buf;
+		    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+			    for(PipelineCfg pipelineCfg : pipelines) {
+			        for(Path path: FileWalker.walk(pipelineCfg.path)) {
+						System.err.println("Found " + path.toString());
+						Files.copy(path, baos);
+			        };
+			    }
+			    buf = baos.toByteArray();
+		    }
+		    try (ByteArrayInputStream bais = new ByteArrayInputStream(buf)) {
+		    	pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, bais);
+		    }
+	    }
+
 		pipeline.start();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -83,7 +132,7 @@ public class Shipper implements Callable<Integer> {
 				double elapsedSecs = (now - lastTime) / 1000000000.0;
 				lastCount = countNow;
 				lastTime = now;
-				System.err.println("processed = " + countNow + " evt/s = " + (processed / elapsedSecs) + " queues = " + pipeline.getQueueSizes());
+				LOG.info("processed = " + countNow + " evt/s = " + (processed / elapsedSecs) + " queues = " + pipeline.getQueueSizes());
 			}		
 			LOG.info("Stopping pipeline...");
 			pipeline.stop();
