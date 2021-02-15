@@ -30,7 +30,9 @@ task fatJar(type: Jar, dependsOn: 'jar') {
     from {
       	"build/classes/java/main" 
     }
-
+    from {
+        "build/resources/main/"
+    }
 }
 
 task rpm(type: Rpm, dependsOn: 'fatJar') {
