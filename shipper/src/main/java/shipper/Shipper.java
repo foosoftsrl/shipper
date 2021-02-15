@@ -84,8 +84,10 @@ public class Shipper implements Callable<Integer> {
 		    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			    for(PipelineCfg pipelineCfg : pipelines) {
 			    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
-			        for(Path path: FileWalker.walk(globPattern.toString().replace("\\", "/"))) {
-						System.err.println("Found " + path.toString());
+			    	String globPatternStr = globPattern.toString().replace("\\", "/");
+			    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
+			        for(Path path: FileWalker.walk(globPatternStr)) {
+						LOG.info("Found configuration file {}", path.toString());
 						Files.copy(path, baos);
 			        };
 			    }
