@@ -3,10 +3,14 @@ package it.foosoft.shipper.plugins;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections4.map.LRUMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
@@ -26,10 +30,18 @@ public class UserAgentFilter implements Filter {
 	@Param
 	public String target;
 
+	@Param
+	public int cacheSize = 32768;
+
 	private Parser uaParser;
 
 	Map<String, Client> lruMap = Collections.synchronizedMap(new LRUMap<>(65536));
 
+	Cache<String, Client> cache = Caffeine.newBuilder()
+			  .expireAfterWrite(15, TimeUnit.MINUTES)
+			  .maximumSize(cacheSize)
+			  .build();
+	
 	@Override
 	public void start() {
 		uaParser = new Parser();
@@ -45,12 +57,14 @@ public class UserAgentFilter implements Filter {
 		if(uaString == null) {
 			return false;
 		}
-		Client client = lruMap.computeIfAbsent(uaString, uaString_->{
-			//LOG.info("Computing damned user agent, size = " + lruMap.size());
+
+		Client client = cache.get(uaString, (String uaString_)->{
 			return uaParser.parse(uaString_);
 		});
 		
-		e.setField("userAgent", toMap(client));
+		if(client != null) {
+			e.setField("userAgent", toMap(client));
+		}	
 		return true;
 	}
 
