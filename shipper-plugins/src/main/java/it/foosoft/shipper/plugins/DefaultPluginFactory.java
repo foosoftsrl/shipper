@@ -13,7 +13,7 @@ public class DefaultPluginFactory implements PluginManager {
 		
 	}
 
-	public Input.Factory createInputPlugin(String name) {
+	public Input.Factory findInputPlugin(String name) {
 		if (name.equals("sftp")) {
 			return SftpInput::new;
 		}
@@ -26,7 +26,7 @@ public class DefaultPluginFactory implements PluginManager {
 		throw new RuntimeException("No such input plugin: " + name);
 	}
 	
-	public Filter.Factory createFilterPlugin(String name) {
+	public Filter.Factory findFilterPlugin(String name) {
 		if (name.equals("mutate")) {
 			return MutateFilter::new;
 		} else if (name.equals("dissect")) {
@@ -56,7 +56,7 @@ public class DefaultPluginFactory implements PluginManager {
 	}
 
 	@Override
-	public PipelineComponent.Factory createOutputPlugin(String name) {
+	public PipelineComponent.Factory findOutputPlugin(String name) {
 		if(name.equals("elasticsearch"))
 			return ElasticSearchOutput.factory;
 		throw new RuntimeException("No such output plugin: " + name);

@@ -4,14 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,6 +21,7 @@ import it.foosoft.shipper.core.FileWalker;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
+import it.foosoft.shipper.plugins.DebugOutput;
 import it.foosoft.shipper.plugins.DefaultPluginFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -48,6 +43,9 @@ public class Shipper implements Callable<Integer> {
 
     @Option(names = {"-b", "--batch-size"}, description = "Batch size for filtering and output stage")
     private int batchSize = 512;
+
+    @Option(names = {"--debug-output"}, description = "Remove all outputs and replace them with a debug output")
+    private boolean debugOutput = false;
 
     public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
         int exitCode = new CommandLine(new Shipper()).execute(args);
@@ -96,6 +94,10 @@ public class Shipper implements Callable<Integer> {
 		    try (ByteArrayInputStream bais = new ByteArrayInputStream(buf)) {
 		    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, bais);
 		    }
+	    }
+	    if(debugOutput) {
+	    	pipeline.getOutput().clear();
+	    	pipeline.getOutput().add(new DebugOutput());
 	    }
 
 		pipeline.start();

@@ -12,10 +12,10 @@ package it.foosoft.shipper.api;
  */
 public interface PluginManager {
 
-	Input.Factory createInputPlugin(String name);
+	Input.Factory findInputPlugin(String name);
 
-	Filter.Factory createFilterPlugin(String name);
+	Filter.Factory findFilterPlugin(String name);
 
-	PipelineComponent.Factory createOutputPlugin(String name);
+	PipelineComponent.Factory findOutputPlugin(String name);
 
 }

@@ -45,6 +45,7 @@ import com.logstash.ConfigParser.Stage_conditionContext;
 import com.logstash.ConfigParser.Stage_declarationContext;
 import com.logstash.ConfigParser.Stage_definitionContext;
 
+import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.api.PipelineComponent;
@@ -110,13 +111,13 @@ public class PipelineBuilder {
 			StageType stageType = getStageType(stage);
 			Stage_definitionContext definition = stage.stage_definition();
 			if(stageType == StageType.INPUT) {
-				parseStageDefinition(pipeline.getInputs(), stageType, definition);
+				parseInputStageDefinition(pipeline, definition);
 			} 
 			else if(stageType == StageType.FILTER) {
-				parseStageDefinition(pipeline.getFilteringStage(), stageType, definition);
+				parseFilteringStage(pipeline.getFilteringStage(), definition);
 			}
 			else if(stageType == StageType.OUTPUT) {
-				parseStageDefinition(pipeline.getOutput(), stageType, definition);
+				parseOutputStageDefinition(pipeline, definition);
 			}
 
 		}
@@ -124,15 +125,62 @@ public class PipelineBuilder {
 	}
 
 	/**
-	 * Parse the content of a stage, which is more or less what other people call "statement-block" 
-	 * @param stage 
-	 * @param stageType
+	 * Parse the content of input stage, which is more or less what other people call "statement-block"
+	 *  
+	 * In input stage we do not support if statement (does it make sense?)
+	 *  
+	 * @param pipeline the pipeline in which input blocks are stored 
+	 * @param definition the definition of the stage
+	 * 
+	 */
+	private void parseInputStageDefinition(Pipeline pipeline, Stage_definitionContext definition) {
+		for(var child: definition.getRuleContexts(ParserRuleContext.class)) {
+			if(!(child instanceof Plugin_declarationContext)) {
+				throw new UnsupportedOperationException("No support for conditionals in input/output");
+			}
+			var pluginDecl = (Plugin_declarationContext)child;
+			LOG.info("Input plugin " + pluginDecl.IDENTIFIER());
+			Factory inputPlugin = pluginFactory.findInputPlugin(pluginDecl.IDENTIFIER().getText());
+			pipeline.addInput(inputPlugin, input->parsePluginConfig(input, input.wrapped, pluginDecl));
+		}
+	}
+
+	/**
+	 * Parse the content of output stage, which is more or less what other people call "statement-block"
+	 *  
+	 * In output stage we do not support if statement (does it make sense?)
+	 *  
+	 * @param pipeline the pipeline in which output blocks are stored
+	 * @param definition the definition of the stage
+	 */
+	private void parseOutputStageDefinition(Pipeline pipeline, Stage_definitionContext definition) {
+		for(var child: definition.getRuleContexts(ParserRuleContext.class)) {
+			if(!(child instanceof Plugin_declarationContext)) {
+				throw new UnsupportedOperationException("No support for conditionals in output stage");
+			}
+			var pluginDecl = (Plugin_declarationContext)child;
+			LOG.info("Output plugin " + pluginDecl.IDENTIFIER());
+			PipelineComponent.Factory outputPlugin = pluginFactory.findOutputPlugin(pluginDecl.IDENTIFIER().getText());
+			Output output = pipeline.addOutput(outputPlugin);
+			if(output instanceof BatchAdapter) {
+				BatchAdapter adapter = (BatchAdapter)output;
+				parsePluginConfig(null, adapter.innerOutput, pluginDecl);
+			}
+		}
+	}
+
+	/**
+	 * Parse the content of a filtering stage, which is more or less what other people call "statement-block" 
+	 * 
+	 * Filtering stage parsing is a bit involved, as blocks can be nested due to conditionals  
+	 * 
+	 * @param stage the stage in which to insert blocks. May be the pipeline's filtering stage, or a conditional
+	 * stage block
 	 * @param definition
 	 * @throws NoSuchFieldException
 	 * @throws IllegalAccessException
 	 */
-	private void parseStageDefinition(Stage stage, StageType stageType,
-			Stage_definitionContext definition) throws NoSuchFieldException, IllegalAccessException {
+	private void parseFilteringStage(Stage<Filter> stage, Stage_definitionContext definition) {
 		for(int i = 0; i < definition.getChildCount(); i++) {
 			ParseTree child = definition.getChild(i);
 			if(child instanceof Stage_conditionContext) {
@@ -149,13 +197,13 @@ public class PipelineBuilder {
 						Logical_expressionContext exprCtx = condition.logical_expression(blockIdx);
 						block.expr = createLogicalExpression(exprCtx.getRuleContext(ParserRuleContext.class, 0)); 
 						block.stage = new Stage<>(stage.getPipeline());
-						parseStageDefinition(block.stage, stageType, condition.stage_definition(blockIdx));
+						parseFilteringStage(block.stage, condition.stage_definition(blockIdx));
 						filter.blocks.add(block);
 					}
 
 					if(condition.stage_definition().size() > condition.logical_expression().size()) {
 						filter.elseStage = new Stage<>(stage.getPipeline());
-						parseStageDefinition(filter.elseStage, stageType, condition.stage_definition(condition.stage_definition().size() - 1));
+						parseFilteringStage(filter.elseStage, condition.stage_definition(condition.stage_definition().size() - 1));
 					}
 					stage.add(filter);
 				} else {
@@ -164,7 +212,12 @@ public class PipelineBuilder {
 			}
 			else if(child instanceof Plugin_declarationContext) {
 				var pluginDecl = (Plugin_declarationContext)child;
-				processPluginDeclaration(stage.getPipeline(), stageType, pluginDecl);
+				LOG.info("Filter plugin " + pluginDecl.IDENTIFIER());
+				it.foosoft.shipper.api.Filter.Factory filterPlugin = pluginFactory.findFilterPlugin(pluginDecl.IDENTIFIER().getText());
+				Filter filter = filterPlugin.create();
+				FilterWrapper wrapper = new FilterWrapper(filter);
+				stage.add(wrapper);
+				parsePluginConfig(wrapper, filter, pluginDecl);
 			}
 		}
 	}
@@ -265,26 +318,6 @@ public class PipelineBuilder {
 			}
 		}
 		throw new UnsupportedOperationException("Unsupported rvalue");
-	}
-
-	private void processPluginDeclaration(Pipeline pipeline, StageType stageType, Plugin_declarationContext pluginDecl)
-			throws NoSuchFieldException, IllegalAccessException {
-		LOG.info(stageType + " plugin " + pluginDecl.IDENTIFIER());
-		if(stageType == StageType.INPUT) {
-			Factory inputPlugin = pluginFactory.createInputPlugin(pluginDecl.IDENTIFIER().getText());
-			pipeline.addInput(inputPlugin, input->parsePluginConfig(input, input.wrapped, pluginDecl));
-		} else if(stageType == StageType.FILTER) {
-			it.foosoft.shipper.api.Filter.Factory filterPlugin = pluginFactory.createFilterPlugin(pluginDecl.IDENTIFIER().getText());
-			FilterWrapper wrapper = pipeline.addFilter(filterPlugin);
-			parsePluginConfig(wrapper, wrapper.getInner(), pluginDecl);
-		} else {
-			PipelineComponent.Factory outputPlugin = pluginFactory.createOutputPlugin(pluginDecl.IDENTIFIER().getText());
-			Output output = pipeline.addOutput(outputPlugin);
-			if(output instanceof BatchAdapter) {
-				BatchAdapter adapter = (BatchAdapter)output;
-				parsePluginConfig(null, adapter.innerOutput, pluginDecl);
-			}
-		}
 	}
 
 	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) {

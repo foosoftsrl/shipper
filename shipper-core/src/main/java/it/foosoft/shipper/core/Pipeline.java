@@ -123,13 +123,6 @@ public class Pipeline {
 		}
 	}
 
-	public FilterWrapper addFilter(it.foosoft.shipper.api.Filter.Factory filterPlugin) {
-		Filter filter = filterPlugin.create();
-		FilterWrapper wrapper = new FilterWrapper(filter);
-		filterStage.add(wrapper);
-		return wrapper;
-	}
-
 	public void start() {
 		outputStage.start();
 		filterStage.start();

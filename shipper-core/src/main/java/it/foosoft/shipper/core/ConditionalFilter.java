@@ -48,6 +48,11 @@ public class ConditionalFilter implements Filter {
 				return true;
 			}
 		}
+		if(elseStage != null) {
+			for(var filter: elseStage) {
+				filter.process(e);
+			}
+		}
 		return true;
 	}
 

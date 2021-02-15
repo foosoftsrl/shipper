@@ -38,6 +38,9 @@ public class EventImpl implements Event {
 	
 	@Override
 	public void setField(String key, Object value) {
+		if(key.equals("SPACE")) {
+			key = key;
+		}
 		fields.put(key, value);
 	}
 
