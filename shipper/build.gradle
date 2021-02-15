@@ -56,6 +56,10 @@ task rpm(type: Rpm, dependsOn: 'fatJar') {
         addParentDirs false
         into '/usr'
     }
+    from('rpm/usr_bin') {
+        addParentDirs false
+        into '/usr/bin'
+    }
     from('rpm/lib') {
         addParentDirs false
         into '/usr/share/shipper'
