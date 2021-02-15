@@ -323,6 +323,7 @@ public class FileInput implements Input {
 		try {
 		    var entries = new ArrayList<Entry>();
 		    if(Files.exists(baseDir)) {
+				LOG.info("Scanning {} with pattern {}", baseDir, pattern);
 			    recursivelyScanDirectory(baseDir, entry->{
 			    	entries.add(entry);
 			    });
@@ -353,7 +354,6 @@ public class FileInput implements Input {
 	}
 	
 	private void recursivelyScanDirectory(Path dir, Consumer<Entry> consumer) throws IOException {
-		LOG.info("Scanning {} with pattern {}", dir, pattern);
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
 			for(Path file: stream) {
 				if(file.getFileName().startsWith("."))
