@@ -73,7 +73,7 @@ public class Shipper implements Callable<Integer> {
 	    Pipeline pipeline = null;
 	    
 	    if(pipelineFile != null) {
-		    pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
+		    pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
 	    } else {
 		    ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		    PipelineCfg[] pipelines = mapper.readValue(pipelinesFile, PipelineCfg[].class);
@@ -83,7 +83,8 @@ public class Shipper implements Callable<Integer> {
 		    byte[] buf;
 		    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			    for(PipelineCfg pipelineCfg : pipelines) {
-			        for(Path path: FileWalker.walk(pipelineCfg.path)) {
+			    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
+			        for(Path path: FileWalker.walk(globPattern.toString().replace("\\", "/"))) {
 						System.err.println("Found " + path.toString());
 						Files.copy(path, baos);
 			        };
@@ -91,7 +92,7 @@ public class Shipper implements Callable<Integer> {
 			    buf = baos.toByteArray();
 		    }
 		    try (ByteArrayInputStream bais = new ByteArrayInputStream(buf)) {
-		    	pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, bais);
+		    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, bais);
 		    }
 	    }
 

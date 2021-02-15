@@ -18,7 +18,7 @@ import it.foosoft.shipper.plugins.DefaultPluginFactory;
 public class TestLogicalOperators {
 	@Test
 	public void test() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/conditions.conf"));
+		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/conditions.conf"));
 		ConditionalFilter filter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		filter.start();
 		

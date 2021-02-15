@@ -46,13 +46,13 @@ public class TestPipelineParsing {
 
 	@Test
 	public void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
-		Object pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
+		Object pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
 		walk();
 	}
 	
 	@Test
 	public void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
+		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
 		assertEquals(1, pipeline.getFilteringStage().size());
 	}
 

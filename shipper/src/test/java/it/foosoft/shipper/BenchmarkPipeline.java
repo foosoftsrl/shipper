@@ -26,7 +26,7 @@ public class BenchmarkPipeline {
 
 	static ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 	public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, 
+		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, 
 				Configuration.MINIMAL, 
 				BenchmarkPipeline.class.getResource(CLINK_FULL));
 		if(enableDump)

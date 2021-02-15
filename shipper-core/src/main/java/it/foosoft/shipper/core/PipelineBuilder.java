@@ -5,12 +5,20 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -49,6 +57,12 @@ import it.foosoft.shipper.core.expressions.OrExpression;
 import it.foosoft.shipper.core.expressions.RegexMatchExpression;
 import it.foosoft.shipper.core.expressions.RegexNotMatchExpression;
 
+/**
+ * Class which builds a pipeline from a logstash-like pipeline definition
+ * 
+ * @author luca
+ *
+ */
 public class PipelineBuilder {
 	
 	public static Logger LOG = LoggerFactory.getLogger(PipelineBuilder.class);
@@ -67,27 +81,27 @@ public class PipelineBuilder {
 		this.configuration = conf;
 	}
 
-	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, File f) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File f) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = new FileInputStream(f)) {
-			return parser.doParse(istr);
+			return parser.doBuild(istr);
 		}
 	}
-	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Objects.requireNonNull(url, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = url.openStream()) {
-			return parser.doParse(istr);
+			return parser.doBuild(istr);
 		}
 	}
 
-	public static Pipeline parse(PluginManager pluginFactory, Configuration conf, InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Objects.requireNonNull(istr, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
-		return parser.doParse(istr);
+		return parser.doBuild(istr);
 	}
 
-	private Pipeline doParse(InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	private Pipeline doBuild(InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Pipeline pipeline = new Pipeline(configuration);
 		ConfigLexer lexer = new ConfigLexer(CharStreams.fromStream(istr));
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -286,18 +300,33 @@ public class PipelineBuilder {
 							+ attribute.IDENTIFIER().getText() + "'");
 				}
 			}
+			validateNonNull(plugin);
 		} catch(Exception e) {
 			throw new RuntimeException("Failed parsing configuration", e);
 		}
 	}
 
-	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException {
+	private void validateNonNull(Object plugin) {
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<Object>> violations = validator.validate(plugin);
+		for(var violation: violations) {
+			LOG.warn("Validation failed for " + plugin.getClass() + ": " + violation.getPropertyPath() + " " + violation.getMessage());
+		}
+		if(!violations.isEmpty()) {
+			throw new IllegalArgumentException("Invalid configuration. Parameters did not pass validation");
+		}
+		
+	}
+
+	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
 		LOG.info("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
 		Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
 		field.setAccessible(true);
 		if (value.STRING() != null) {
-			field.set(plugin, extractStringContent(value.STRING()));
+			String extractStringContent = extractStringContent(value.STRING());
+			setFieldValueString(plugin, field, extractStringContent);
 		} else if (value.DECIMAL() != null) {
 			field.set(plugin, Integer.parseInt(value.DECIMAL().getText()));
 		} else if (value.array() != null) {
@@ -336,6 +365,22 @@ public class PipelineBuilder {
 		} else {
 			throw new UnsupportedOperationException("Unsupported plugin type");
 		}
+	}
+
+	private void setFieldValueString(Object plugin, Field field, String extractStringContent)
+			throws IllegalAccessException, InvocationTargetException {
+		if(field.getType().isAssignableFrom(String.class)) {
+			field.set(plugin, extractStringContent);
+			return;
+		}
+		for(Method m: field.getType().getDeclaredMethods()) {
+			if(m.getName().equals("valueOf") && m.getParameterCount() == 1 && m.getParameters()[0].getType() == String.class) {
+				m.setAccessible(true);
+				field.set(plugin, m.invoke(null, extractStringContent));
+				return;
+			}
+		}
+		throw new IllegalStateException("Don't know how to initialize field " + plugin.getClass() + "." + field.getName() + " with a string");
 	}
 
 	private static String extractStringContent(TerminalNode valueNode) {

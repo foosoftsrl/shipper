@@ -18,7 +18,7 @@ import it.foosoft.shipper.core.PipelineBuilder;
 public class TestLogstashDissectFilter {
 	@Test
 	public void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/dissect_logstash.conf"));
+		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/dissect_logstash.conf"));
 		LogstashDissectFilter filter = (LogstashDissectFilter)pipeline.findFilterById("dissect");
 		filter.start();
 		try(var reader = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("files/vod01.msf.cdn.mediaset.net_20210208222701_219180n2126107.log")))) {

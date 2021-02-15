@@ -44,7 +44,7 @@ public class Benchmark implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
     	Configuration cfg = new Configuration(threadCount, batchSize);
-		Pipeline pipeline = PipelineBuilder.parse(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
+		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
 		if(dump) {
 			pipeline.addOutput(new DebugOutput());
 		}

@@ -37,7 +37,10 @@ import it.foosoft.shipper.api.Param;
 public class FileInput implements Input {
 	private static final Logger LOG = LoggerFactory.getLogger(FileInput.class);
 
-    public static String antGlobToRegexp(String globExpression) {
+	// TODO: terrible code. It must be cleaned and put in SDK (shipper-api) as directory parsing
+	// can be useful to more than one plugin
+	// Ok, this sucks. But I want to go in production
+	public static String antGlobToRegexp(String globExpression) {
     	globExpression = globExpression.replace("**/", "<anydir>");
     	globExpression = globExpression.replace("*", "<anychar>");
     	globExpression = globExpression.replace("<anydir>", "([^/]*/)*");
@@ -49,11 +52,16 @@ public class FileInput implements Input {
 	@Param
 	String path;
 
-    @Param
-    String file_completed_action = "delete";
+	public static enum FileCompleteAction { delete; }
 
+	@Param
+	FileCompleteAction file_completed_action = FileCompleteAction.delete;
+
+	public static enum Mode { read; }
+
+	@NotNull
     @Param
-	String mode;
+	Mode mode;
 
     @Param
 	Object sincedb_clean_after;
@@ -187,10 +195,10 @@ public class FileInput implements Input {
 		if(path == null) {
 			throw new IllegalArgumentException("missing path parameter");
 		}
-		if(!"read".equals(mode)) {
-			throw new IllegalArgumentException("only read mode is supported");
+		if(mode == null) {
+			throw new IllegalArgumentException("mode attribute must be specified (and btw... it can only be 'read')");
 		}
-		if(!"delete".equals(file_completed_action)) {
+		if(FileCompleteAction.delete != file_completed_action) {
 			throw new IllegalArgumentException("only delete is supported for file_complete_action");
 		}
 		int pos = path.indexOf("*");
@@ -314,11 +322,15 @@ public class FileInput implements Input {
 	public void scan() {
 		try {
 		    var entries = new ArrayList<Entry>();
-		    recursivelyScanDirectory(baseDir, entry->{
-		    	entries.add(entry);
-		    });
-		    entries.sort(FileInput::compareLastModified);
-		    updateTaskList(entries);
+		    if(Files.exists(baseDir)) {
+			    recursivelyScanDirectory(baseDir, entry->{
+			    	entries.add(entry);
+			    });
+			    entries.sort(FileInput::compareLastModified);
+			    updateTaskList(entries);
+		    } else {
+		    	LOG.warn("Directory " + baseDir + " Does not exist");
+		    }
 		} catch(Exception e) {
 			e.printStackTrace();
 			LOG.error("Failed getting remote file list {}", e.getMessage());
@@ -341,7 +353,7 @@ public class FileInput implements Input {
 	}
 	
 	private void recursivelyScanDirectory(Path dir, Consumer<Entry> consumer) throws IOException {
-		LOG.info("Scanning {}", dir);
+		LOG.info("Scanning {} with pattern {}", dir, pattern);
 		try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
 			for(Path file: stream) {
 				if(file.getFileName().startsWith("."))
