@@ -56,6 +56,13 @@ public class Shipper implements Callable<Integer> {
 	public static class PipelineCfg {
 		@JsonProperty("pipeline.id")
 		String id;
+
+		@JsonProperty("pipeline.workers")
+		Integer workers;
+		
+		@JsonProperty("pipeline.batch.size")
+		Integer batchSize;
+
 		@JsonProperty("path.config")
 		String path;
 	}
@@ -67,10 +74,10 @@ public class Shipper implements Callable<Integer> {
     	AtomicBoolean stopRequest = new AtomicBoolean(false);
 	    AtomicBoolean stopped = new AtomicBoolean(false);
 	    
-	    Configuration cfg = new Configuration(threadCount, batchSize);
 	    Pipeline pipeline = null;
 	    
 	    if(pipelineFile != null) {
+		    Configuration cfg = new Configuration(threadCount, batchSize);
 		    pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, pipelineFile);
 	    } else {
 		    ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -78,19 +85,23 @@ public class Shipper implements Callable<Integer> {
 		    if(pipelines.length != 1) {
 		    	throw new UnsupportedOperationException("Just support for 1 pipeline, sorry");
 		    }
+		    PipelineCfg pipelineCfg = pipelines[0];
+
 		    byte[] buf;
 		    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			    for(PipelineCfg pipelineCfg : pipelines) {
-			    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
-			    	String globPatternStr = globPattern.toString().replace("\\", "/");
-			    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
-			        for(Path path: FileWalker.walk(globPatternStr)) {
-						LOG.info("Found configuration file {}", path.toString());
-						Files.copy(path, baos);
-			        };
-			    }
+		    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
+		    	String globPatternStr = globPattern.toString().replace("\\", "/");
+		    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
+		        for(Path path: FileWalker.walk(globPatternStr)) {
+					LOG.info("Found configuration file {}", path.toString());
+					Files.copy(path, baos);
+		        };
 			    buf = baos.toByteArray();
 		    }
+		    Configuration cfg = new Configuration(
+		    		pipelineCfg.workers != null ? pipelineCfg.workers: this.threadCount, 
+    				pipelineCfg.batchSize != null ? pipelineCfg.batchSize: this.batchSize
+		    );
 		    try (ByteArrayInputStream bais = new ByteArrayInputStream(buf)) {
 		    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, bais);
 		    }
@@ -125,15 +136,15 @@ public class Shipper implements Callable<Integer> {
 
 		
 		try {
-			int lastCount = 0;
+			long lastCount = 0;
 			long lastTime = System.nanoTime();
 			while(!stopRequest.get()) {
 				synchronized(stopRequest) {
 					stopRequest.wait(1000);
 				}
 				long now = System.nanoTime();
-				int countNow = pipeline.getOutputCounter();
-				int processed = countNow - lastCount;
+				long countNow = pipeline.getOutputCounter();
+				long processed = countNow - lastCount;
 				double elapsedSecs = (now - lastTime) / 1000000000.0;
 				lastCount = countNow;
 				lastTime = now;

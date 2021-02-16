@@ -2,15 +2,12 @@ package it.foosoft.shipper;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
-import it.foosoft.shipper.core.SimpleOutput;
 import it.foosoft.shipper.plugins.DebugOutput;
 import it.foosoft.shipper.plugins.DefaultPluginFactory;
 
@@ -34,13 +31,13 @@ public class BenchmarkPipeline {
 
 		pipeline.start();
 		
-		int lastCount = 0;
+		long lastCount = 0;
 		long lastTime = System.nanoTime();
 		for(int i = 0; i < 5; i++) {
 			Thread.sleep(1000);
 			long now = System.nanoTime();
-			int countNow = pipeline.getInputCounter();
-			int processed = countNow - lastCount;
+			long countNow = pipeline.getInputCounter();
+			long processed = countNow - lastCount;
 			double elapsedSecs = (now - lastTime) / 1000000000.0;
 			lastCount = countNow;
 			lastTime = now;

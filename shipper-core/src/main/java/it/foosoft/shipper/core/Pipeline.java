@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class Pipeline {
 			this.numThreads = numThreads;
 			this.batchSize = batchSize;
 		}
+		
 	}
 	
 	Stage<Input> inputStage = new Stage<>(this);
@@ -60,8 +62,8 @@ public class Pipeline {
 
 	List<InputContextImpl> inputContexts = new ArrayList<>();
 	
-	AtomicInteger inputCounter = new AtomicInteger(0);
-	AtomicInteger outputCounter = new AtomicInteger(0);
+	AtomicLong inputCounter = new AtomicLong(0);
+	AtomicLong outputCounter = new AtomicLong(0);
 	
 	ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactory() {
 		AtomicInteger id = new AtomicInteger(0);
@@ -262,11 +264,11 @@ public class Pipeline {
 		return null;
 	}
 	
-	public int getInputCounter() {
+	public long getInputCounter() {
 		return inputCounter.get();
 	}
 
-	public int getOutputCounter() {
+	public long getOutputCounter() {
 		return outputCounter.get();
 	}
 
