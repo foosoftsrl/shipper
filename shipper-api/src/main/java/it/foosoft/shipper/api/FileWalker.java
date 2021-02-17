@@ -1,6 +1,7 @@
 package it.foosoft.shipper.api;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,9 +60,11 @@ public class FileWalker {
 						}
 					});
 				} else {
-					for(Path child: Files.newDirectoryStream(path)) {
-						if(pattern.matcher(child.getFileName().toString()).matches()) {
-							consumer.consume(child);
+					try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+						for(Path childPath: stream) {
+							if(pattern.matcher(childPath.getFileName().toString()).matches()) {
+								consumer.consume(childPath);
+							}
 						}
 					}
 				}
@@ -81,25 +84,27 @@ public class FileWalker {
 			String regex = Globs.toUnixRegexPattern(segmentFilter);
 			Pattern segmentPattern = Pattern.compile(regex);
 			if(Files.isDirectory(path)) {
-				for(Path childPath: Files.newDirectoryStream(path)) {
-					if(segmentPattern.matcher(childPath.getFileName().toString()).matches()) {
-						if(segmentFilter.contains("**")) {
-							Pattern fullPattern = Pattern.compile(Globs.toUnixRegexPattern(filter));
-							if(Files.isDirectory(childPath)) {
-								walkDirectory(childPath, p->{
-									String relativePath = path.relativize(p).toString().replace("\\", "/");
+				try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+					for(Path childPath: stream) {
+						if(segmentPattern.matcher(childPath.getFileName().toString()).matches()) {
+							if(segmentFilter.contains("**")) {
+								Pattern fullPattern = Pattern.compile(Globs.toUnixRegexPattern(filter));
+								if(Files.isDirectory(childPath)) {
+									walkDirectory(childPath, p->{
+										String relativePath = path.relativize(p).toString().replace("\\", "/");
+										if(fullPattern.matcher(relativePath).matches()) {
+											consumer.consume(p);
+										}
+									});
+								} else {
+									String relativePath = path.relativize(childPath).toString().replace("\\", "/");
 									if(fullPattern.matcher(relativePath).matches()) {
-										consumer.consume(p);
+										consumer.consume(childPath);
 									}
-								});
-							} else {
-								String relativePath = path.relativize(childPath).toString().replace("\\", "/");
-								if(fullPattern.matcher(relativePath).matches()) {
-									consumer.consume(childPath);
 								}
+							} else {
+								walk(filter.substring(pos + 1), childPath, consumer);
 							}
-						} else {
-							walk(filter.substring(pos + 1), childPath, consumer);
 						}
 					}
 				}
