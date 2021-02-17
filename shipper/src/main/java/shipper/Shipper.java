@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -92,7 +94,11 @@ public class Shipper implements Callable<Integer> {
 		    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
 		    	String globPatternStr = globPattern.toString().replace("\\", "/");
 		    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
-		        for(Path path: FileWalker.walk(globPatternStr)) {
+		        List<Path> cfgFilePathList = FileWalker.walk(globPatternStr);
+		        cfgFilePathList.sort((a,b)->{
+		        	return a.compareTo(b);
+		        });
+				for(Path path: cfgFilePathList) {
 					LOG.info("Found configuration file {}", path.toString());
 					Files.copy(path, baos);
 		        };
