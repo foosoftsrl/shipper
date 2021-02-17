@@ -20,6 +20,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -115,6 +116,9 @@ public class ElasticSearchOutput implements BatchOutput {
 				credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
 				builder.setDefaultCredentialsProvider(credentialsProvider);
 		}
+		builder.setDefaultIOReactorConfig(IOReactorConfig.custom()
+                .setIoThreadCount(outstandingRequests)
+                .build());
 		return builder;
 	}
 
