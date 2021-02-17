@@ -1,5 +1,7 @@
 package it.foosoft.shipper.api;
 
+import java.util.Collection;
+
 /**
  * An RValue... resolves to a String or to a String[], possibly depending on event contents
  * 
@@ -17,4 +19,13 @@ public interface RValue {
 	 * @return
 	 */
 	public Object get(Event e);
+	
+	/**
+	 * Evaluate this reference to a collection. i.e. String-->Collection<String> int-->Collection<Integer> and so on...
+	 * 
+	 * No idea what to do for maps or other fancy types
+	 *  
+	 * @return
+	 */
+	public Collection<Object> evaluateToCollection(Event e);
 }

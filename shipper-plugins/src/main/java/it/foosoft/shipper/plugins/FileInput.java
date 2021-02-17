@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -19,8 +18,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import javax.validation.constraints.NotNull;
@@ -30,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Bag;
 import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.FileWalker;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
 import it.foosoft.shipper.api.Param;
@@ -83,10 +81,6 @@ public class FileInput implements Input {
 	// executor which discovers new files
 	private ScheduledExecutorService scanExecutor;
 
-	private Pattern pattern;
-
-	private Path baseDir;
-
 	List<Worker> workers = new ArrayList<>();
 	
 	private static class Entry {
@@ -139,9 +133,10 @@ public class FileInput implements Input {
 		}
 
 		private void download(Entry entry) {
-			currentEntry = entry;
-			int currentLine = 0;
+			LOG.info("Processing {}", entry.path);
 			try {
+				currentEntry = entry;
+				int currentLine = 0;
 				try(InputStream istr = getInputStream(entry)) {
 					try(var reader = new InputStreamReader(istr)) {
 						try(var bufferedReader = new BufferedReader(reader)) {
@@ -156,17 +151,17 @@ public class FileInput implements Input {
 								}
 								currentLine++;
 							}
-							// if we arrived here on a stop request and we re
-							if(stop.get()) {
-								int restartLine = Math.max(currentLine, entry.startOffset);
-								currentEntry = new Entry(currentEntry.path, currentEntry.lastModified, restartLine); 
-							} else {
-								currentEntry = null; 
-								Files.deleteIfExists(entry.path);
-								return;
-							}
 						}
 					}
+				}
+				// if we arrived here on a stop request and we re
+				if(stop.get()) {
+					int restartLine = Math.max(currentLine, entry.startOffset);
+					currentEntry = new Entry(currentEntry.path, currentEntry.lastModified, restartLine); 
+				} else {
+					currentEntry = null; 
+					Files.deleteIfExists(entry.path);
+					return;
 				}
 			} catch(Exception e) {
 				LOG.error("Failed processing file {}. Leaving it on disk", entry.path, e);
@@ -220,10 +215,6 @@ public class FileInput implements Input {
 			}
 		}
 
-		baseDir = Path.of(path.substring(0,pos));
-		String filter = path.substring(pos);
-		String filterRegex = antGlobToRegexp(filter);
-		pattern = Pattern.compile(filterRegex);
 		scanExecutor = Executors.newScheduledThreadPool(1);
 		scanExecutor.scheduleWithFixedDelay(this::scan, 0, discover_interval * 500, TimeUnit.MILLISECONDS);
 		
@@ -256,15 +247,6 @@ public class FileInput implements Input {
 		}
 	}
 
-	@Override
-	public void stop() {
-		stop(false);
-	}
-
-	void stopAndCompleteQueuedJobs() {
-		stop(true);
-	}
-
 	/*
 	 * Will create a bag such as 
 	 * {
@@ -288,8 +270,15 @@ public class FileInput implements Input {
 		}
 		return bag;
 	}
-	// This method is visible to package for unit testing 
-	private void stop(boolean completeQueuedTasks) {
+	
+	/**
+	 *  Stop the filter as soon as possible, writing 
+	 *  
+	 *  This method will actually complete shortly (milliseconds) unless workers are blocked downstream
+	 *  
+	 */
+	@Override
+	public void stop() {
 		scanExecutor.shutdownNow();
 		try {
 			if(!scanExecutor.awaitTermination(120, TimeUnit.SECONDS)) {
@@ -300,6 +289,9 @@ public class FileInput implements Input {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+
+		// Clear the task queue... we don't want the workers to start anything 
+		taskQueue.clear();
 
 		// Queue an Entry.Stop event for each worker, they will take (at most) one each
 		for(int i = 0; i < workers.size(); i++) {
@@ -322,16 +314,14 @@ public class FileInput implements Input {
 	public void scan() {
 		try {
 		    var entries = new ArrayList<Entry>();
-		    if(Files.exists(baseDir)) {
-				LOG.info("Scanning {} with pattern {}", baseDir, pattern);
-			    recursivelyScanDirectory(baseDir, entry->{
-			    	entries.add(entry);
-			    });
-			    entries.sort(FileInput::compareLastModified);
-			    updateTaskList(entries);
-		    } else {
-		    	LOG.warn("Directory " + baseDir + " Does not exist");
+		    for(Path path: FileWalker.walk(this.path)) {
+		    	// Should I log anything if this is not a regular file? it may really be annoying
+		    	if(Files.isRegularFile(path)) {
+			    	entries.add(new Entry(path, Files.getLastModifiedTime(path)));
+		    	}
 		    }
+		    entries.sort(FileInput::compareLastModified);
+		    updateTaskList(entries);
 		} catch(Exception e) {
 			e.printStackTrace();
 			LOG.error("Failed getting remote file list {}", e.getMessage());
@@ -353,25 +343,6 @@ public class FileInput implements Input {
 		return left.lastModified.compareTo(right.lastModified);
 	}
 	
-	private void recursivelyScanDirectory(Path dir, Consumer<Entry> consumer) throws IOException {
-		try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-			for(Path file: stream) {
-				if(file.getFileName().startsWith("."))
-					continue;
-				if(Files.isDirectory(file)) {
-					 recursivelyScanDirectory(file, consumer);
-				}
-				else {
-					Path relativePath = baseDir.relativize(file);
-					String relPathUnix = relativePath.toString().replace("\\", "/");
-					if(pattern.matcher(relPathUnix).matches()) {
-						consumer.accept(new Entry(file, Files.getLastModifiedTime(file)));
-					}
-				}
-			}
-		}
-	}
-
 	// Test method...
 	void forceScan() throws InterruptedException, ExecutionException {
 		scanExecutor.submit(this::scan).get();

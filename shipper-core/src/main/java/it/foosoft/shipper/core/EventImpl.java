@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.validation.constraints.NotNull;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -35,12 +37,14 @@ public class EventImpl implements Event {
 		this.timeStamp = timestamp;
 	}
 
-	
+
+	public EventImpl withField(String key, Object value) {
+		setField(key, value);
+		return this;
+	}
+
 	@Override
 	public void setField(String key, Object value) {
-		if(key.equals("SPACE")) {
-			key = key;
-		}
 		fields.put(key, value);
 	}
 
@@ -102,5 +106,10 @@ public class EventImpl implements Event {
 			tags = new HashSet<>(tags);
 		}
 		tags.add(tag);
+	}
+
+	@Override
+	public @NotNull Set<String> fieldNames() {
+		return Collections.unmodifiableSet(fields.keySet()); 
 	}
 }

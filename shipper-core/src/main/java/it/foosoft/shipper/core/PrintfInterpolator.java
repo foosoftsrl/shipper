@@ -39,10 +39,6 @@ public class PrintfInterpolator {
 		this.functions = funcs.toArray(Function[]::new);
 	}
 
-	PrintfInterpolator(Function<Event,String>[] functions) {
-		this.functions = functions;
-	}
-
 	private String extracted(Event e, String attrName) {
 		Object attribute = e.getField(attrName);
 		return attribute == null ? "" : attribute.toString();

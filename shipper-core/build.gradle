@@ -37,6 +37,9 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
 	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
-	// https://mvnrepository.com/artifact/org.apache.bval/bval-jsr
 	implementation group: 'org.apache.bval', name: 'bval-jsr', version: '2.0.5'
+
+    // https://mvnrepository.com/artifact/org.easymock/easymock
+    testImplementation group: 'org.easymock', name: 'easymock', version: '4.2'
+	testImplementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.14.0'
 }

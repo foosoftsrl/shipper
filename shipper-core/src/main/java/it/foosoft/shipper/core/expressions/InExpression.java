@@ -19,11 +19,13 @@ public class InExpression implements LogicalExpression {
 	@Override
 	public boolean evaluate(Event event) {
 		Object leftObj = left.get(event);
-		Object rightObj = right.get(event);
 		if(!(leftObj instanceof String))
 			return false;
-		if(!(rightObj instanceof Collection))
+
+		Collection rightObj = right.evaluateToCollection(event);
+		if(rightObj == null)
 			return false;
+		
 		String leftStr = (String)leftObj;
 		Collection rightStr = (Collection)rightObj;
 		for(Object s: rightStr) {
@@ -32,6 +34,7 @@ public class InExpression implements LogicalExpression {
 		}
 		return false;
 	}
+
 
 	@Override
 	public String toString() {

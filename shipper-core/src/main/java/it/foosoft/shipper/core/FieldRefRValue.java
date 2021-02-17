@@ -1,5 +1,7 @@
 package it.foosoft.shipper.core;
 
+import java.util.Collection;
+
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.RValue;
 
@@ -19,5 +21,10 @@ public class FieldRefRValue implements RValue {
 	@Override
 	public String toString() {
 		return "[" + fieldName + "]";
+	}
+
+	@Override
+	public Collection<Object> evaluateToCollection(Event e) {
+		throw new UnsupportedOperationException("Can't convert a field ref to a collection");
 	}
 }

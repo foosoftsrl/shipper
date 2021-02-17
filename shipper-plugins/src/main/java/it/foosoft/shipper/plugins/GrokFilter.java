@@ -35,25 +35,37 @@ public class GrokFilter implements Filter {
 	boolean break_on_match;
 
 	Map<String, Grok> groks;
+
 	@Override
 	public boolean process(Event event) {
-		boolean successful = true;
+		boolean atLeastOneMatch = false;
 		for(Map.Entry<String,Grok> entry: groks.entrySet()) {
 			var fieldName = entry.getKey();
 			String fieldValue = event.getFieldAsString(fieldName);
 			if(fieldValue == null) {
-				successful = false;
 				continue;
 			}
 			var grok = entry.getValue();
 			Match cm = grok.match(fieldValue);
-			Map<String, Object> captured = cm.capture();
-			for(var capturedField : captured.entrySet()) {
-				if(capturedField.getValue() != null)
-					event.setField(capturedField.getKey(), capturedField.getValue());
+			if(!Boolean.TRUE.equals(cm.isNull())) {
+				Map<String, Object> captured = cm.capture();
+				for(var capturedField : captured.entrySet()) {
+					if(capturedField.getValue() != null) {
+						if(capturedField.getKey().endsWith("_grokfailure")) {
+							LOG.warn("Failed conversion of field " + capturedField.getKey().replace("_grokfailure", ""));
+						}
+						else {
+							event.setField(capturedField.getKey(), capturedField.getValue());
+						}
+					}
+				}
+				atLeastOneMatch = true;
 			}
 		}
-		return successful;
+		if(!atLeastOneMatch) {
+			event.addTag(tag_on_failure);
+		}
+		return atLeastOneMatch;
 	}
 
 	@Override

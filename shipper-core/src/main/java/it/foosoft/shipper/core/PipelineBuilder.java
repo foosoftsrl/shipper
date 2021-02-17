@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -20,6 +21,7 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -28,6 +30,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.logstash.ConfigLexer;
 import com.logstash.ConfigParser;
 import com.logstash.ConfigParser.Fieldref_elementContext;
@@ -52,6 +56,7 @@ import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.api.RValue;
 import it.foosoft.shipper.core.Pipeline.Configuration;
+import it.foosoft.shipper.core.expressions.AndExpression;
 import it.foosoft.shipper.core.expressions.InExpression;
 import it.foosoft.shipper.core.expressions.NotInExpression;
 import it.foosoft.shipper.core.expressions.OrExpression;
@@ -85,26 +90,32 @@ public class PipelineBuilder {
 	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File f) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = new FileInputStream(f)) {
-			return parser.doBuild(istr);
+			return parser.doBuild(CharStreams.fromStream(istr));
 		}
 	}
 	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Objects.requireNonNull(url, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = url.openStream()) {
-			return parser.doBuild(istr);
+			return parser.doBuild(CharStreams.fromStream(istr));
 		}
 	}
 
 	public static Pipeline build(PluginManager pluginFactory, Configuration conf, InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		Objects.requireNonNull(istr, "Invalid null URL specified");
+		Objects.requireNonNull(istr, "Invalid null stream specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
-		return parser.doBuild(istr);
+		return parser.doBuild(CharStreams.fromStream(istr));
 	}
 
-	private Pipeline doBuild(InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, Reader reader) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Objects.requireNonNull(reader, "Invalid null reader specified");
+		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
+		return parser.doBuild(CharStreams.fromReader(reader));
+	}
+
+	private Pipeline doBuild(CharStream fromStream) throws JsonParseException, JsonMappingException, IOException {
 		Pipeline pipeline = new Pipeline(configuration);
-		ConfigLexer lexer = new ConfigLexer(CharStreams.fromStream(istr));
+		ConfigLexer lexer = new ConfigLexer(fromStream);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		ConfigParser p = new ConfigParser(tokens);
 		for (Stage_declarationContext stage : p.config().stage_declaration()) {
@@ -195,7 +206,7 @@ public class PipelineBuilder {
 					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
 						ConditionalFilter.ConditionalBlock block = new ConditionalFilter.ConditionalBlock();
 						Logical_expressionContext exprCtx = condition.logical_expression(blockIdx);
-						block.expr = createLogicalExpression(exprCtx.getRuleContext(ParserRuleContext.class, 0)); 
+						block.expr = createLogicalExpression(exprCtx); 
 						block.stage = new Stage<>(stage.getPipeline());
 						parseFilteringStage(block.stage, condition.stage_definition(blockIdx));
 						filter.blocks.add(block);
@@ -222,9 +233,10 @@ public class PipelineBuilder {
 		}
 	}
 
-	private LogicalExpression createLogicalExpression(ParserRuleContext exprCtx) {
-		if(exprCtx instanceof Match_expressionContext) {
-			Match_expressionContext match = (Match_expressionContext)exprCtx;
+	private LogicalExpression createLogicalExpression(Logical_expressionContext exprCtx) {
+		ParserRuleContext rule = exprCtx.getRuleContext(ParserRuleContext.class, 0);
+		if(rule instanceof Match_expressionContext) {
+			Match_expressionContext match = (Match_expressionContext)rule;
 			RvalueContext rValue = match.rvalue();
 			String regexp;
 			if(match.REGEX() != null) {
@@ -246,47 +258,41 @@ public class PipelineBuilder {
 				throw new UnsupportedOperationException("Unsupported regexp match type");
 			}
 
-		} else if(exprCtx instanceof In_expressionContext){
-			In_expressionContext in = (In_expressionContext)exprCtx;
-			if(in.rvalue().size() != 2) {
-				throw new UnsupportedOperationException("In operator requires two arguments");
-			}
+		} else if(rule instanceof In_expressionContext){
+			In_expressionContext in = (In_expressionContext)rule;
+			ensure2Children(in.rvalue());
 			RvalueContext left = in.rvalue().get(0);
 			RvalueContext right = in.rvalue().get(1);
 			if(in.NOT() != null)
 				return new NotInExpression(makeRValue(left), makeRValue(right));
 			else
 				return new InExpression(makeRValue(left), makeRValue(right));
-		} else if(exprCtx instanceof Logical_expressionContext) {
-			Logical_expressionContext logicalCtx = (Logical_expressionContext)exprCtx;
-			if(logicalCtx.OR() != null) {
-				List<Logical_expressionContext> children = logicalCtx.getRuleContexts(Logical_expressionContext.class);
-				if(children.size() != 2) {
-					throw new UnsupportedOperationException("Can't find two operator for logical or");
-				}
-				return new OrExpression(createLogicalExpression(children.get(0)), createLogicalExpression(children.get(1)));
+		} 
+		else if(exprCtx.OR() != null) {
+			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
+			ensure2Children(children);
+			return new OrExpression(createLogicalExpression(children.get(0)), createLogicalExpression(children.get(1)));
+		}
+		else if(exprCtx.AND() != null) {
+			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
+			ensure2Children(children);
+			return new AndExpression(createLogicalExpression(children.get(0)), createLogicalExpression(children.get(1)));
+		}
+		else if(exprCtx.LPAREN() != null) {
+			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
+			if(children.size() != 1) {
+				throw new UnsupportedOperationException("Can't find a single expression inside parentheses");
 			}
-			else if(logicalCtx.AND() != null) {
-				List<Logical_expressionContext> children = logicalCtx.getRuleContexts(Logical_expressionContext.class);
-				if(children.size() != 2) {
-					throw new UnsupportedOperationException("Can't find two operator for logical or");
-				}
-				return new AndExpression(createLogicalExpression(children.get(0)), createLogicalExpression(children.get(1)));
-			}
-			else if(logicalCtx.LPAREN() != null) {
-				List<Logical_expressionContext> children = logicalCtx.getRuleContexts(Logical_expressionContext.class);
-				if(children.size() != 1) {
-					throw new UnsupportedOperationException("Can't find a single expression inside parentheses");
-				}
-				Logical_expressionContext exprCtx2 = children.get(0);
-				if(exprCtx2.children.size() != 1) {
-					throw new UnsupportedOperationException("Can't find a single expression inside parentheses - 2");
-				}
-				return createLogicalExpression(exprCtx2.getChild(ParserRuleContext.class, 0));
-			}
+			return createLogicalExpression(children.get(0));
+		}
+		else {
 			throw new UnsupportedOperationException("Unrecognized logical operator");
-		} else {
-			throw new UnsupportedOperationException("No support for this kind of expression");
+		}
+	}
+
+	private <T> void ensure2Children(List<T> children) {
+		if(children.size() != 2) {
+			throw new UnsupportedOperationException("Can't find two operators for a binary operator");
 		}
 	}
 
@@ -301,8 +307,7 @@ public class PipelineBuilder {
 				}
 				s.add(extractStringContent(item.STRING()));
 			}
-			String[] arrayOfStrings = s.toArray(String[]::new);
-			return evt->arrayOfStrings;
+			return new RValueArrayOfStrings(s.toArray(String[]::new));
 		} else if(ctx.fieldref() != null) {
 			List<Fieldref_elementContext> elementList = ctx.fieldref().fieldref_element();
 			String[] identifiers = elementList.stream().map(e->e.IDENTIFIER().getText()).toArray(String[]::new);

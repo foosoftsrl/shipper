@@ -1,10 +1,14 @@
 package it.foosoft.shipper.plugins;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
@@ -36,6 +40,50 @@ public class TestGrokFilter {
 		assertEquals("cmsTag", evt.getField("cmsTag"));
 		assertEquals("l0", evt.getField("hlsLevel"));
 		assertEquals(2222, evt.getField("hlsVideoChunk"));
+	}
+
+	@Test
+	public void testGrokOk() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		GrokFilter filter = new GrokFilter();
+		filter.match = Map.of("message", "^%{INT:intField:int}$");
+		filter.start();
+
+		Event evt = new EventImpl(1000);
+		evt.setField("message", "123");
+		assertTrue(filter.process(evt));
+		assertEquals("message,intField", evt.fieldNames().stream().collect(Collectors.joining(",")));
+		assertEquals(123, evt.getField("intField"));
+		assertEquals("", evt.tags().stream().collect(Collectors.joining(",")));
+	}
+
+	@Test
+	public void testGrokMatchFail() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		GrokFilter filter = new GrokFilter();
+		filter.match = Map.of("message", "^%{INT:intField:int}$");
+		filter.start();
+
+		Event evt = new EventImpl(1000);
+		evt.setField("message", "xxx");
+		assertFalse(filter.process(evt));
+		assertEquals("message", evt.fieldNames().stream().collect(Collectors.joining(",")));
+		assertEquals("_grokparsefailure", evt.tags().stream().collect(Collectors.joining(",")));
+	}
+
+	// Not sure of what Logstash does here... let's accept the 
+	@DisplayName("Verify what happens when match is positive but type conversion fails")
+	@Test
+	public void testGrokConversionFail() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		GrokFilter filter = new GrokFilter();
+		filter.match = Map.of("message", "^%{USERNAME:intField:int}$");
+		filter.start();
+
+		
+		Event evt = new EventImpl(1000);
+		evt.setField("message", "xxx");
+		filter.process(evt);
+		assertEquals("message,intField", evt.fieldNames().stream().collect(Collectors.joining(",")));
+		assertEquals("xxx", evt.getField("intField"));
+		assertEquals("", evt.tags().stream().collect(Collectors.joining(",")));
 	}
 
 }

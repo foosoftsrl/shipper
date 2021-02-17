@@ -2,12 +2,13 @@ package it.foosoft.shipper.plugins;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -19,17 +20,13 @@ import org.junit.jupiter.api.io.TempDir;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.InputContextImpl;
+import it.foosoft.shipper.plugins.FileInput.Mode;
 
 public class TestFileInput {
 
 	@TempDir
 	File tempDir;
 
-	/**
-	 * @throws IOException
-	 * @throws InterruptedException
-	 * @throws ExecutionException
-	 */
 	@Test
 	public void test() throws IOException, InterruptedException, ExecutionException {
 		List<Event> events = new ArrayList<>();
@@ -37,13 +34,26 @@ public class TestFileInput {
 			events.add(evt);
 		}));
 
-		fileInput.path = tempDir.getAbsolutePath();
-		Files.writeString(Paths.get(tempDir.getAbsolutePath(), "test1"), "aaa\nbbb\n");
-		Files.writeString(Paths.get(tempDir.getAbsolutePath(), "test2"), "ccc\nddd\n");
+		fileInput.path = tempDir.getAbsolutePath() + "/*";
+		
+		File path = new File(tempDir, "test1");
+		File path2 = new File(tempDir, "test2");
+		Files.writeString(path.toPath(), "aaa\nbbb\n");
+		Files.writeString(path2.toPath(), "ccc\nddd\n");
 
+		fileInput.mode = Mode.read;
 		fileInput.start();
 		fileInput.forceScan();
-		fileInput.stopAndCompleteQueuedJobs();
+		
+		assertTimeout(Duration.ofMinutes(2), ()->{
+			while(path.exists()) {
+				Thread.sleep(100);
+			}
+			while(path2.exists()) {
+				Thread.sleep(100);
+			}
+		});
+		fileInput.stop();
 		assertEquals(0, tempDir.listFiles().length);
 		assertEquals(4, events.size());
 		Set<String> msgs = events.stream().map(e->e.getFieldAsString("message")).collect(Collectors.toSet());

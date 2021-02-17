@@ -64,12 +64,6 @@ public interface Event {
 	 */
 	void removeField(String fieldName);
 
-	default void removeFields(String[] fields) {
-		for(String field: fields) {
-			removeField(field);
-		}
-	}
-
 	/**
 	 * Get an immutable collection of tags. 
 	 *  
@@ -78,11 +72,30 @@ public interface Event {
 	public @NotNull Set<String> tags();
 	
 	/**
+	 * Get an immutable collection of field names. 
+	 *  
+	 * @return string collection of tags
+	 */
+	public @NotNull Set<String> fieldNames();
+
+	/**
 	 * Add a tag
 	 * 
 	 * @param tag
 	 */
 	public void addTag(String tag);
+
+
+	/**
+	 * Helper method to remove a few fields at once 
+	 * 
+	 * @param fields
+	 */
+	default void removeFields(String... fields) {
+		for(String field: fields) {
+			removeField(field);
+		}
+	}
 
 	/**
 	 * Helper method to test for presence of a field
