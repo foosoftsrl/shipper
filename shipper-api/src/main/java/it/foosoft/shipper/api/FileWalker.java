@@ -34,7 +34,6 @@ public class FileWalker {
 		filter = filter.replace("\\", "/");
 		if(!isAbsolutePath(filter)) {
 			filter = Paths.get("").toString().replace("\\", "/") + filter;
-			throw new IllegalArgumentException("Can't walk ");
 		}
 		int slashPos = filter.indexOf("/");
 		if(slashPos < 0)
