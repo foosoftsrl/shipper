@@ -15,6 +15,8 @@ public class FieldRefRValue implements RValue {
 
 	@Override
 	public Object get(Event evt) {
+		if("tags".equals(fieldName))
+			return evt.tags();
 		return evt.getField(fieldName);
 	}
 	
@@ -25,6 +27,10 @@ public class FieldRefRValue implements RValue {
 
 	@Override
 	public Collection<Object> evaluateToCollection(Event e) {
+		Object obj = get(e);
+		if(obj instanceof Collection) {
+			return (Collection)obj;
+		}
 		throw new UnsupportedOperationException("Can't convert a field ref to a collection");
 	}
 }
