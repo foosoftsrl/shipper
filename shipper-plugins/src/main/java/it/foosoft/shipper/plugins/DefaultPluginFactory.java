@@ -59,6 +59,8 @@ public class DefaultPluginFactory implements PluginManager {
 	public PipelineComponent.Factory findOutputPlugin(String name) {
 		if(name.equals("elasticsearch"))
 			return ElasticSearchOutput.factory;
+		if(name.equals("elasticsearch_sync"))
+			return ElasticSearchOutputSync.factory;
 		throw new RuntimeException("No such output plugin: " + name);
 	}
 }
