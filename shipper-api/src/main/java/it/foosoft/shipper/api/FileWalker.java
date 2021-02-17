@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FileWalker {
 	public enum Type {
@@ -107,10 +108,12 @@ public class FileWalker {
 	}
 
 	private static void walkDirectory(Path path, Consumer consumer) throws IOException {
-		for(Path child: Files.list(path).collect(Collectors.toList())) {
-			consumer.consume(child);
-			if(Files.isDirectory(child))
-				walkDirectory(child, consumer);
+		try(Stream<Path> list = Files.list(path)) {
+			for(Path child: list.collect(Collectors.toList())) {
+				consumer.consume(child);
+				if(Files.isDirectory(child))
+					walkDirectory(child, consumer);
+			}
 		}
 	}
 }
