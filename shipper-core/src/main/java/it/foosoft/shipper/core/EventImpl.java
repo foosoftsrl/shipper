@@ -25,6 +25,8 @@ public class EventImpl implements Event {
 
 	private Map<String,Object> fields = new HashMap<>();
 
+	private Map<String,Object> metadata = new HashMap<>();
+
 	private Set<String> tags = null;
 
 	private boolean canceled;
@@ -111,5 +113,25 @@ public class EventImpl implements Event {
 	@Override
 	public @NotNull Set<String> fieldNames() {
 		return Collections.unmodifiableSet(fields.keySet()); 
+	}
+
+	@Override
+	public Object getMetadata(String name) {
+		return metadata.get(name);
+	}
+
+	@Override
+	public void setMetadata(String name, Object value) {
+		metadata.put(name, value);
+	}
+
+	@Override
+	public Map<String, Object> getMetadata() {
+		return metadata;
+	}
+
+	public EventImpl withMetadata(String name, String value) {
+		setMetadata(name, value);
+		return this;
 	}
 }

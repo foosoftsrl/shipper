@@ -1,4 +1,4 @@
-package it.foosoft.shipper.core;
+package it.foosoft.shipper.core.rvalue;
 
 import java.util.Arrays;
 import java.util.Collection;

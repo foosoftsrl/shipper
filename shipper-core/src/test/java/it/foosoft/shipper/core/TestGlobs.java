@@ -20,6 +20,7 @@ public class TestGlobs {
 		assertEquals("^.*$", Globs.toUnixRegexPattern("**"));
 	}
 	
+	@Test
 	public void testSingleStar() {
 		assertEquals("^[^/]*$", Globs.toUnixRegexPattern("*"));
 	}

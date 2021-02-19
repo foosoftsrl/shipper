@@ -7,11 +7,15 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.InputContext;
 
+/**
+ * A simple input context, whose unique aim is simplifying unit tests
+ * 
+ * @author luca
+ */
 public class InputContextImpl implements InputContext {
 	private EventProcessor processor;
 	private Bag stopStatus;
 	private Bag startStatus;
-	private String id;
 
 	public InputContextImpl(@NotNull EventProcessor processor) {
 		this(processor, null);
@@ -51,18 +55,4 @@ public class InputContextImpl implements InputContext {
 		return startStatus;
 	}
 
-	public void setStartStatus(Bag props) {
-		this.startStatus = props;
-		
-	}
-
-	public String getId() {
-		return this.id;
-		
-	}
-	public void setId(String filterId) {
-		this.id = filterId;
-		
-	}
-	
 }

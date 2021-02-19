@@ -2,7 +2,6 @@ package it.foosoft.shipper.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
-import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.Output;
 
 public class Pipeline {
@@ -51,7 +49,7 @@ public class Pipeline {
 		
 	}
 	
-	Stage<Input> inputStage = new Stage<>(this);
+	Stage<InputWrapper> inputStage = new Stage<>(this);
 	
 	/**
 	 * This is all the filter{} nodes flattened
@@ -60,8 +58,6 @@ public class Pipeline {
 
 	Stage<Output> outputStage = new Stage<>(this);
 
-	List<InputContextImpl> inputContexts = new ArrayList<>();
-	
 	AtomicLong inputCounter = new AtomicLong(0);
 	AtomicLong outputCounter = new AtomicLong(0);
 	
@@ -93,20 +89,14 @@ public class Pipeline {
 		}
 	}
 
-	public void addInput(Factory inputPlugin, Consumer<InputWrapper> configurator) {
-		InputContextImpl ctx = new InputContextImpl(evt->{
-			processInputEvent(evt);
-		});
-		inputContexts.add(ctx);
-		Input input = inputPlugin.create(ctx);
-		InputWrapper wrapper = new InputWrapper(input);
+	public void addInput(Input.Factory inputPlugin, Consumer<InputWrapper> configurator) {
+		InputWrapper wrapper = new InputWrapper(this, inputPlugin);
 		configurator.accept(wrapper);
-		inputStage.add(input);
-		ctx.setId(wrapper.getId());
+		inputStage.add(wrapper);
 		if(wrapper.getId() != null) {
 			Bag props = startupConfig.getBagProperty(wrapper.getId());
 			if(props != null) {
-				ctx.setStartStatus(props);
+				wrapper.setStartStatus(props);
 			}
 		}
 	}
@@ -172,9 +162,9 @@ public class Pipeline {
 
 	private void savePipelineStatus() {
 		BagImpl bag = new BagImpl();
-		for(var inputCtx: inputContexts) {
-			if(inputCtx.getId() != null && inputCtx.getStopStatus() != null) {
-				bag.setBagProperty(inputCtx.getId(), inputCtx.getStopStatus());
+		for(var input: inputStage) {
+			if(input.getId() != null && input.getStopStatus() != null) {
+				bag.setBagProperty(input.getId(), input.getStopStatus());
 			}
 		}
 		try {
@@ -224,7 +214,7 @@ public class Pipeline {
 		}
 	}
 	
-	public Stage<Input> getInputs() {
+	public Stage<InputWrapper> getInputs() {
 		return inputStage;
 	}
 

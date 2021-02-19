@@ -1,6 +1,7 @@
 package it.foosoft.shipper.api;
 
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 import javax.validation.constraints.NotNull;
@@ -85,7 +86,30 @@ public interface Event {
 	 */
 	public void addTag(String tag);
 
+	/**
+	 * Get a metadata property 
+	 * 
+	 * @param name field name
+	 * @return 
+	 */
+	Object getMetadata(String name);
 
+	/**
+	 * Get all metadata properties 
+	 * 
+	 * @return 
+	 */
+	Map<String,Object> getMetadata();
+
+	/**
+	 * Set a metadata property, that is a property which should not be serialized 
+	 * 
+	 * @param name field name
+	 * @param value field vale
+	 */
+	void setMetadata(String name, Object value);
+
+	
 	/**
 	 * Helper method to remove a few fields at once 
 	 * 
@@ -120,5 +144,5 @@ public interface Event {
 		}
 		return null;
 	}
-	
+
 }

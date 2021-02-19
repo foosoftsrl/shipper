@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,11 @@ import it.foosoft.shipper.core.expressions.NotInExpression;
 import it.foosoft.shipper.core.expressions.OrExpression;
 import it.foosoft.shipper.core.expressions.RegexMatchExpression;
 import it.foosoft.shipper.core.expressions.RegexNotMatchExpression;
+import it.foosoft.shipper.core.rvalue.ComplexFieldRefRvalue;
+import it.foosoft.shipper.core.rvalue.SingleFieldRefRValue;
+import it.foosoft.shipper.core.rvalue.MetadataRefRvalue;
+import it.foosoft.shipper.core.rvalue.RValueArrayOfStrings;
+import it.foosoft.shipper.core.rvalue.RValueBuilder;
 
 /**
  * Class which builds a pipeline from a logstash-like pipeline definition
@@ -311,16 +317,7 @@ public class PipelineBuilder {
 		} else if(ctx.fieldref() != null) {
 			List<Fieldref_elementContext> elementList = ctx.fieldref().fieldref_element();
 			String[] identifiers = elementList.stream().map(e->e.IDENTIFIER().getText()).toArray(String[]::new);
-			if(identifiers.length == 0) {
-				throw new UnsupportedOperationException("No identifiers in fieldRef expression");
-			}
-			else if(identifiers.length == 1) {
-				// Special (faster) case for single identifier
-				return new FieldRefRValue(identifiers[0]);
-			} 
-			else {
-				return new ComplexFieldRefRvalue(identifiers);
-			}
+			return RValueBuilder.makeFieldRefRValue(identifiers);
 		}
 		throw new UnsupportedOperationException("Unsupported rvalue");
 	}
