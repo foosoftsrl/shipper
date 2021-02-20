@@ -14,7 +14,7 @@ import it.foosoft.shipper.api.Param;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
-public class TestLogicalOperators {
+public class TestFilterConditionals {
 
 	PluginManager manager = EasyMock.createMock(PluginManager.class);
 	

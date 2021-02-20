@@ -7,17 +7,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.RValue;
+import it.foosoft.shipper.api.StringProvider;
+import it.foosoft.shipper.core.rvalue.RValueBuilder;
 
 /**
  * A class which interpolates strings such as "...%{field1}...%{field2}..."
  * 
  * @author luca
  */
-public class PrintfInterpolator {
+public class PrintfInterpolator implements StringProvider{
 	private Function<Event, String>[] functions;
 
 	public PrintfInterpolator(String value) {
-		Pattern p = Pattern.compile("%\\{(\\w*)\\}");
+		Pattern p = Pattern.compile("%\\{([^\\}]*)\\}");
 		Matcher m = p.matcher(value);
 		int lastMatchEnd = 0;
 		List<Function<Event,String>> funcs = new ArrayList<>();
@@ -29,7 +32,8 @@ public class PrintfInterpolator {
 				funcs.add(e->fixedString);
 			}
 			String attrName = m.group(1);
-			funcs.add(e->extracted(e, attrName));
+			RValue fieldRef = RValueBuilder.makeFieldRefRValueFromString(attrName);
+			funcs.add(e->(String)fieldRef.get(e));
 			lastMatchEnd = end;
 		}
 		if(lastMatchEnd != value.length()) {
@@ -39,17 +43,14 @@ public class PrintfInterpolator {
 		this.functions = funcs.toArray(Function[]::new);
 	}
 
-	private String extracted(Event e, String attrName) {
-		Object attribute = e.getField(attrName);
-		return attribute == null ? "" : attribute.toString();
-	}
-
-	public String interpolate(Event e) {
+	@Override
+	public String evaluate(Event e) {
 		StringBuilder builder = new StringBuilder();
 		for(var func:functions) {
 			builder.append(func.apply(e));
 		}
 		return builder.toString();
 	}
+
 	
 }

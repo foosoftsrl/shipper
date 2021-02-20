@@ -1,9 +1,10 @@
-package it.foosoft.shipper.plugins;
+package it.foosoft.shipper.core;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.FieldRef;
 
 /**
  * A "reference" to a possibly nested event field  
@@ -11,7 +12,7 @@ import it.foosoft.shipper.api.Event;
  * @author luca
  *
  */
-public class FieldRef {
+public class FieldRefImpl implements FieldRef {
 	private String[] fields;
 
 	/**
@@ -19,7 +20,7 @@ public class FieldRef {
 	 * 
 	 * @param expr Either a bare "fieldName" or an expression such as [parent][child]
 	 */
-	public FieldRef(String expr) {
+	public FieldRefImpl(String expr) {
 		// split on ][, this is needed for nested
 		fields = expr.split("\\]\\[");
 		for(int i = 0; i < fields.length; i++) {
@@ -30,6 +31,7 @@ public class FieldRef {
 		}
 	}
 	
+	@Override
 	public void remove(Event e) {
 		if(fields.length == 1) {
 			e.removeField(fields[0]);
@@ -57,6 +59,7 @@ public class FieldRef {
 		}
 	}
 
+	@Override
 	public void set(Event e, Object value) {
 		if(fields.length == 1) {
 			e.setField(fields[0], value);
@@ -85,6 +88,7 @@ public class FieldRef {
 		}
 	}
 
+	@Override
 	public Object get(Event e) {
 		if(fields.length == 1) {
 			return e.getField(fields[0]);

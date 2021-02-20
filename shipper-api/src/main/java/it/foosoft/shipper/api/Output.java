@@ -8,7 +8,7 @@ package it.foosoft.shipper.api;
  *
  */
 public interface Output extends PipelineComponent {
-	public interface Factory {
+	public interface Factory extends PipelineComponent.Factory {
 		Output create();
 	}
 

@@ -11,13 +11,15 @@ import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.EventImpl;
+import it.foosoft.shipper.core.FieldRefBuilderImpl;
 
 public class TestMutateFilter {
+	
 	@Test
 	public void testRenameSimple() {
 		Event e = new EventImpl();
 		e.setField("test", 10);
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.rename = Map.of("test","tost");
 		m.start();
 		m.process(e);
@@ -28,18 +30,23 @@ public class TestMutateFilter {
 	public void testRenameBrackets() {
 		Event e = new EventImpl();
 		e.setField("test", 10);
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.rename = Map.of("test","[tost]");
 		m.start();
 		m.process(e);
 		assertEquals(10, e.getField("tost"));
 		assertNull(e.getField("test"));
 	}
+	private MutateFilter createMutateFilter() {
+		MutateFilter mutateFilter = new MutateFilter();
+		mutateFilter.fieldRefBuilder = new FieldRefBuilderImpl();
+		return mutateFilter;
+	}
 	@Test
 	public void testRenameNested() {
 		Event e = new EventImpl();
 		e.setField("test", 10);
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.rename = Map.of("test","[tost][test]");
 		m.start();
 		m.process(e);
@@ -52,7 +59,7 @@ public class TestMutateFilter {
 	public void testRenameNestedSrc() {
 		Event e = new EventImpl();
 		e.setField("test", new HashMap<>(Map.of("test", 10)));
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.rename = Map.of("[test][test]","[tost][test]");
 		m.start();
 		m.process(e);
@@ -64,7 +71,7 @@ public class TestMutateFilter {
 	public void testCopySimple() {
 		Event e = new EventImpl();
 		e.setField("test", 10);
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.copy = Map.of("test","tost");
 		m.start();
 		m.process(e);
@@ -76,7 +83,7 @@ public class TestMutateFilter {
 	public void testCopyBrackets() {
 		Event e = new EventImpl();
 		e.setField("test", 10);
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.copy = Map.of("test","[tost]");
 		m.start();
 		m.process(e);
@@ -87,7 +94,7 @@ public class TestMutateFilter {
 	public void testCopyNested() {
 		Event e = new EventImpl();
 		e.setField("test", 10);
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.copy = Map.of("test","[tost][test]");
 		m.start();
 		m.process(e);
@@ -100,7 +107,7 @@ public class TestMutateFilter {
 	public void testCopyNestedSrc() {
 		Event e = new EventImpl();
 		e.setField("test", new HashMap<>(Map.of("test", 10)));
-		MutateFilter m = new MutateFilter();
+		MutateFilter m = createMutateFilter();
 		m.copy = Map.of("[test][test]","[tost][test]");
 		m.start();
 		m.process(e);

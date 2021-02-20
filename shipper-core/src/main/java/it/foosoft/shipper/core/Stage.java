@@ -8,11 +8,7 @@ public class Stage<T extends PipelineComponent> extends ArrayList<T> implements 
 
 	private Pipeline pipeline;
 
-	public Stage(Pipeline pipeline) {
-		this.pipeline = pipeline;
-	}
-	public Pipeline getPipeline() {
-		return pipeline;
+	public Stage() {
 	}
 
 	@Override

@@ -35,6 +35,7 @@ import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.plugins.elastic.BulkRequestInputStream;
 
 /**
@@ -52,7 +53,7 @@ public class ElasticSearchOutput implements BatchOutput {
 	public String[] hosts = new String[] {"127.0.0.1:9200"};
 	
 	@Param
-	public String index;
+	public StringProvider index;
 	
 	@Param
 	public String user;

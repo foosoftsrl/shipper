@@ -2,7 +2,7 @@ package it.foosoft.shipper.plugins.mutate;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
-import it.foosoft.shipper.plugins.FieldRef;
+import it.foosoft.shipper.api.FieldRef;
 
 public class RenameField implements EventProcessor {
 

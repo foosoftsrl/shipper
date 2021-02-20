@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.RValue;
 
 /**
@@ -12,7 +13,7 @@ import it.foosoft.shipper.api.RValue;
  * 
  * @author luca
  */
-public class MetadataRefRvalue implements RValue {
+public class MetadataRefRvalue implements RValue, FieldRef {
 
 	private String[] identifiers;
 
@@ -46,6 +47,19 @@ public class MetadataRefRvalue implements RValue {
 			buf.append("[").append(identifier).append("]");
 		}
 		return buf.toString();
+	}
+
+	@Override
+	public void remove(Event e) {
+		throw new UnsupportedOperationException("Metadata removal not implemented");
+	}
+
+	@Override
+	public void set(Event evt, Object value) {
+		if(identifiers.length != 1) {
+			throw new UnsupportedOperationException("No support for nested metadata set");
+		}
+		evt.setMetadata(identifiers[0], value);
 	}
 
 }

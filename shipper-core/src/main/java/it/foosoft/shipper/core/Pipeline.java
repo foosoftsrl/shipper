@@ -49,14 +49,14 @@ public class Pipeline {
 		
 	}
 	
-	Stage<InputWrapper> inputStage = new Stage<>(this);
+	Stage<InputWrapper> inputStage = new Stage<>();
 	
 	/**
 	 * This is all the filter{} nodes flattened
 	 */  
-	Stage<Filter> filterStage = new Stage<>(this);
+	Stage<Filter> filterStage = new Stage<>();
 
-	Stage<Output> outputStage = new Stage<>(this);
+	Stage<Output> outputStage = new Stage<>();
 
 	AtomicLong inputCounter = new AtomicLong(0);
 	AtomicLong outputCounter = new AtomicLong(0);
@@ -101,18 +101,10 @@ public class Pipeline {
 		}
 	}
 
-	public Output addOutput(it.foosoft.shipper.api.PipelineComponent.Factory outputPlugin) {
-		if(outputPlugin instanceof Output.Factory) {
-			Output plugin = ((Output.Factory)outputPlugin).create();
-			outputStage.add(plugin);
-			return plugin;
-		} else if(outputPlugin instanceof BatchOutput.Factory) {
-			BatchAdapter plugin = new BatchAdapter((BatchOutput.Factory)outputPlugin, configuration.batchSize);
-			outputStage.add(plugin);
-			return plugin;
-		} else {
-			throw new IllegalArgumentException("Invalid output plugin, must either implement Output or BatchOutput interfaces");
-		}
+	public Output addOutput(it.foosoft.shipper.api.Output.Factory outputPlugin) {
+		Output plugin = ((Output.Factory)outputPlugin).create();
+		outputStage.add(plugin);
+		return plugin;
 	}
 
 	public void start() {
@@ -222,7 +214,7 @@ public class Pipeline {
 		return filterStage;
 	}
 
-	public Stage<Output> getOutput() {
+	public Stage<Output> getOutputStage() {
 		return outputStage;
 	}
 	
@@ -243,7 +235,13 @@ public class Pipeline {
 		return queueSizes;
 	}
 
-	public Filter findFilterById(String id) {
+	/**
+	 * This method makes no sense... it won't work for conditionals  
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public Filter findFilterPluginById(String id) {
 		for(var filter: filterStage) {
 			if(filter instanceof FilterWrapper) {
 				FilterWrapper wrapper = (FilterWrapper)filter;

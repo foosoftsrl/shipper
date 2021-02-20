@@ -14,7 +14,9 @@ import org.slf4j.Logger;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
+import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.Param;
 import it.foosoft.shipper.plugins.converters.Converters;
 
@@ -37,6 +39,9 @@ public class LogstashDissectFilter implements Filter {
 	@Param(description = "Type conversion (from string)")
 	public Map<String, String> convert_datatype = new HashMap<>();
 
+	@Inject
+	public FieldRefBuilder fieldRefBuilder;
+	
 	public List<EventProcessor> converters = new ArrayList<>();
 
 	static class Context {
@@ -80,7 +85,7 @@ public class LogstashDissectFilter implements Filter {
 	private void prepareConverters() {
 		converters.clear();
 		for(Map.Entry<String, String> entry: convert_datatype.entrySet()) {
-			converters.add(Converters.createConverter(entry.getKey(), entry.getValue()));
+			converters.add(Converters.createConverter(fieldRefBuilder.createFieldRef(entry.getKey()), entry.getValue()));
 		}
 	}
 

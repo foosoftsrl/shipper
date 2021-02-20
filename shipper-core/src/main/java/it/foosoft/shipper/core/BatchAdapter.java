@@ -1,14 +1,12 @@
 package it.foosoft.shipper.core;
 
-import java.util.concurrent.LinkedBlockingDeque;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.BatchOutput;
-import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.api.BatchOutputContext;
+import it.foosoft.shipper.api.Output;
+import it.foosoft.shipper.api.Param;
 
 /**
  * BatchAdapter's will expose a simple "push" interface to the pipeline, and a "pull" OutputContext to the BatchOutput plugin
@@ -21,6 +19,9 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 
 	public BatchOutput innerOutput;
 
+	@Param
+	String id;
+	
 	public BatchAdapter(BatchOutput.Factory outputPlugin) {
 		this(outputPlugin, 512);
 	}

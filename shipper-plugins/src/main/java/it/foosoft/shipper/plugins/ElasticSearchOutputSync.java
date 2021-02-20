@@ -26,6 +26,7 @@ import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.plugins.elastic.BulkIndexHeader;
 
 /**
@@ -43,7 +44,7 @@ public class ElasticSearchOutputSync implements BatchOutput {
 	public String[] hosts = new String[] {"127.0.0.1:9200"};
 	
 	@Param
-	public String index;
+	public StringProvider index;
 	
 	@Param
 	public String user;
@@ -59,8 +60,6 @@ public class ElasticSearchOutputSync implements BatchOutput {
 	
 	private ObjectMapper objectMapper = new ObjectMapper();
 
-	BulkIndexHeader bulkIndexHeader;
-	
 	private ExecutorService service = Executors.newCachedThreadPool(new ThreadFactory() {
 		AtomicInteger counter = new AtomicInteger(0);
 		@Override
@@ -83,7 +82,6 @@ public class ElasticSearchOutputSync implements BatchOutput {
 
 	@Override
 	public void start() {
-		bulkIndexHeader = new BulkIndexHeader(index);
 		for(int i = 0; i < outstandingRequests; i++) {
 			service.submit(this::poller);
 		}
@@ -213,10 +211,11 @@ public class ElasticSearchOutputSync implements BatchOutput {
 
 	private void writeEvents(OutputStream outputStream, List<Event> events) throws IOException {
 		SequenceWriter sequenceWriter = objectMapper.writer().writeValues(outputStream);
-		for(Event e: events) {
+		for(Event evt: events) {
+			BulkIndexHeader bulkIndexHeader = new BulkIndexHeader(index.evaluate(evt));
 			sequenceWriter.write(bulkIndexHeader);
 			outputStream.write('\n');
-			sequenceWriter.write(e);
+			sequenceWriter.write(evt);
 			outputStream.write('\n');
 		}
 	}

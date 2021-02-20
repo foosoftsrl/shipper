@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
 
 import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.StringProvider;
 
 /**
  * An implementation of InputStream which gets its data from the JSON serialization of an array of events  
@@ -25,16 +26,16 @@ import it.foosoft.shipper.api.Event;
  */
 public class BulkRequestInputStream extends InputStream {
 
-	int nextEvent = 0;
+	int nextEventIdx = 0;
 	private ObjectWriter objectMapper;
 	private List<Event> events;
-	private BulkIndexHeader bulkIndexHeader;
 	private OutputStream outputStream;
 	private SequenceWriter objectWriter;
 	private CircularByteBuffer buffer = new CircularByteBuffer(32768);
 	private boolean eof;
-	public BulkRequestInputStream(String indexName, List<Event> events, boolean compress) throws IOException {
-		this.bulkIndexHeader = new BulkIndexHeader(indexName);
+	private StringProvider indexName;
+	public BulkRequestInputStream(StringProvider indexName, List<Event> events, boolean compress) throws IOException {
+		this.indexName = indexName;
 		this.events = events;
 		this.objectMapper = new ObjectMapper().writer();
 		this.outputStream = new OutputStream() {
@@ -78,12 +79,17 @@ public class BulkRequestInputStream extends InputStream {
 		readBytes += avail;
     	
     	// Then create new buffers, store them into 
-    	while(len > 0 && nextEvent < events.size()) {
-			objectWriter.write(bulkIndexHeader);
+    	while(len > 0 && nextEventIdx < events.size()) {
+			Event event = events.get(nextEventIdx);
+			String targetIndex = indexName.evaluate(event);
+			if(targetIndex == null) {
+				throw new IllegalArgumentException("Invalid type for index after resolution");
+			}
+			objectWriter.write(new BulkIndexHeader((String)targetIndex));
 			outputStream.write('\n');
-			objectWriter.write(events.get(nextEvent));
+			objectWriter.write(event);
 			outputStream.write('\n');
-			nextEvent++;
+			nextEventIdx++;
 
 	    	avail = Math.min(len, buffer.getCurrentNumberOfBytes());
 	    	buffer.read(b, off, avail);

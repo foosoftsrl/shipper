@@ -2,18 +2,19 @@ package it.foosoft.shipper.core.modifiers;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
+import it.foosoft.shipper.api.FieldRef;
 
 public class RemoveField implements EventProcessor {
 
-	private String fieldName;
+	private FieldRef fieldName;
 
-	public RemoveField(String fieldName) {
+	public RemoveField(FieldRef fieldName) {
 		this.fieldName = fieldName;
 	}
 
 	@Override
 	public void process(Event e) {
-		e.removeField(fieldName);
+		fieldName.remove(e);
 	}
 
 }

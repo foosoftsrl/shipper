@@ -8,29 +8,14 @@ import it.foosoft.shipper.api.Filter;
 
 public class ConditionalFilter implements Filter {
 	
-	private LogicalExpression expr;
-	private Pipeline pipeline;
-
-	public ConditionalFilter(Pipeline pipeline) {
-		this.pipeline = pipeline;
-	}
-	
-	static class ConditionalBlock {
-		LogicalExpression expr;
-		Stage<Filter> stage;
-		void start() {
-			stage.start();
-		}
-		void stop() {
-			stage.stop();
-		}
+	public ConditionalFilter() {
 	}
 	
 	/**
 	 * if... or else if blocks
 	 * else 
 	 */
-	List<ConditionalBlock> blocks = new ArrayList<>();
+	List<ConditionalBlock<Filter>> blocks = new ArrayList<>();
 	Stage<Filter> elseStage;
 
 	// Don't know if I should return true or false, or whatever...
@@ -38,7 +23,7 @@ public class ConditionalFilter implements Filter {
 	public boolean process(Event e) {
 		if(e.canceled())
 			return true;
-		for(ConditionalBlock block: blocks) {
+		for(ConditionalBlock<Filter> block: blocks) {
 			if(block.expr.evaluate(e)) {
 				for(var a : block.stage) {
 					a.process(e);

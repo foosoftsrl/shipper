@@ -2,20 +2,21 @@ package it.foosoft.shipper.plugins.converters;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
+import it.foosoft.shipper.api.FieldRef;
 
 public class IntegerConverter implements EventProcessor {
 
-	private String attrName;
+	private FieldRef fieldRef;
 
-	public IntegerConverter(String attrName) {
-		this.attrName = attrName;
+	public IntegerConverter(FieldRef fieldRef) {
+		this.fieldRef = fieldRef;
 	}
 
 	@Override
 	public void process(Event e) {
-		Object obj = e.getField(attrName);
+		Object obj = fieldRef.get(e);
 		if(obj != null) {
-			e.setField(attrName, Integer.parseInt(obj.toString()));
+			fieldRef.set(e, Integer.parseInt(obj.toString()));
 		}
 	}
 }

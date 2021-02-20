@@ -10,7 +10,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +49,16 @@ import com.logstash.ConfigParser.Stage_conditionContext;
 import com.logstash.ConfigParser.Stage_declarationContext;
 import com.logstash.ConfigParser.Stage_definitionContext;
 
+import it.foosoft.shipper.api.BatchOutput;
+import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.api.RValue;
+import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.expressions.AndExpression;
 import it.foosoft.shipper.core.expressions.InExpression;
@@ -63,11 +66,9 @@ import it.foosoft.shipper.core.expressions.NotInExpression;
 import it.foosoft.shipper.core.expressions.OrExpression;
 import it.foosoft.shipper.core.expressions.RegexMatchExpression;
 import it.foosoft.shipper.core.expressions.RegexNotMatchExpression;
-import it.foosoft.shipper.core.rvalue.ComplexFieldRefRvalue;
-import it.foosoft.shipper.core.rvalue.SingleFieldRefRValue;
-import it.foosoft.shipper.core.rvalue.MetadataRefRvalue;
 import it.foosoft.shipper.core.rvalue.RValueArrayOfStrings;
 import it.foosoft.shipper.core.rvalue.RValueBuilder;
+import it.foosoft.shipper.core.rvalue.StringRValue;
 
 /**
  * Class which builds a pipeline from a logstash-like pipeline definition
@@ -125,18 +126,19 @@ public class PipelineBuilder {
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		ConfigParser p = new ConfigParser(tokens);
 		for (Stage_declarationContext stage : p.config().stage_declaration()) {
-			StageType stageType = getStageType(stage);
 			Stage_definitionContext definition = stage.stage_definition();
-			if(stageType == StageType.INPUT) {
+			if(stage.INPUT() != null) {
 				parseInputStageDefinition(pipeline, definition);
 			} 
-			else if(stageType == StageType.FILTER) {
+			else if(stage.FILTER() != null) {
 				parseFilteringStage(pipeline.getFilteringStage(), definition);
 			}
-			else if(stageType == StageType.OUTPUT) {
-				parseOutputStageDefinition(pipeline, definition);
+			else if(stage.OUTPUT() != null) {
+				parseOutputStageDefinition(pipeline.getOutputStage(), definition);
 			}
-
+			else {
+				throw new IllegalArgumentException("Invalid stage type");				
+			}
 		}
 		return pipeline;
 	}
@@ -170,20 +172,51 @@ public class PipelineBuilder {
 	 * @param pipeline the pipeline in which output blocks are stored
 	 * @param definition the definition of the stage
 	 */
-	private void parseOutputStageDefinition(Pipeline pipeline, Stage_definitionContext definition) {
+	private void parseOutputStageDefinition(Stage<Output> stage, Stage_definitionContext definition) {
 		for(var child: definition.getRuleContexts(ParserRuleContext.class)) {
-			if(!(child instanceof Plugin_declarationContext)) {
-				throw new UnsupportedOperationException("No support for conditionals in output stage");
+			if(child instanceof Stage_conditionContext) {
+				var condition = (Stage_conditionContext)child;
+				if(condition.IF() != null) {
+					if(condition.logical_expression().size() == 0)
+						throw new IllegalStateException("Missing if expression!");
+					if((condition.stage_definition().size() - condition.logical_expression().size()) / 2 != 0)
+						throw new IllegalStateException("Mismatch between expression and body count!");
+
+					ConditionalOutput output = new ConditionalOutput();
+					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
+						ConditionalBlock<Output> block = new ConditionalBlock<Output>();
+						Logical_expressionContext exprCtx = condition.logical_expression(blockIdx);
+						block.expr = createLogicalExpression(exprCtx); 
+						block.stage = new Stage<>();
+						parseOutputStageDefinition(block.stage, condition.stage_definition(blockIdx));
+						output.blocks.add(block);
+					}
+					if(condition.stage_definition().size() > condition.logical_expression().size()) {
+						output.elseStage = new Stage<>();
+						parseOutputStageDefinition(output.elseStage, condition.stage_definition(condition.stage_definition().size() - 1));
+					}
+					stage.add(output);
+				} else {
+					throw new UnsupportedOperationException("No support for else");
+				}
+			} else if(child instanceof Plugin_declarationContext) {
+				var pluginDecl = (Plugin_declarationContext)child;
+				LOG.info("Output plugin " + pluginDecl.IDENTIFIER());
+				PipelineComponent.Factory outputPlugin = pluginFactory.findOutputPlugin(pluginDecl.IDENTIFIER().getText());
+
+				if(outputPlugin instanceof BatchOutput.Factory) {
+					BatchAdapter batchAdapter = new BatchAdapter((BatchOutput.Factory)outputPlugin, configuration.batchSize);
+					stage.add(batchAdapter);
+					parsePluginConfig(batchAdapter, batchAdapter.innerOutput, pluginDecl);
+				} else if(outputPlugin instanceof Output.Factory) {
+					Output output = ((Output.Factory)outputPlugin).create();
+					stage.add(output);
+					parsePluginConfig(null, output, pluginDecl);
+				} else {
+					throw new UnsupportedOperationException("No support for output plugin of type " + outputPlugin.getClass());
+				}
 			}
-			var pluginDecl = (Plugin_declarationContext)child;
-			LOG.info("Output plugin " + pluginDecl.IDENTIFIER());
-			PipelineComponent.Factory outputPlugin = pluginFactory.findOutputPlugin(pluginDecl.IDENTIFIER().getText());
-			Output output = pipeline.addOutput(outputPlugin);
-			if(output instanceof BatchAdapter) {
-				BatchAdapter adapter = (BatchAdapter)output;
-				parsePluginConfig(null, adapter.innerOutput, pluginDecl);
-			}
-		}
+ 		}
 	}
 
 	/**
@@ -208,18 +241,18 @@ public class PipelineBuilder {
 					if((condition.stage_definition().size() - condition.logical_expression().size()) / 2 != 0)
 						throw new IllegalStateException("Mismatch between expression and body count!");
 
-					ConditionalFilter filter = new ConditionalFilter(stage.getPipeline());
+					ConditionalFilter filter = new ConditionalFilter();
 					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
-						ConditionalFilter.ConditionalBlock block = new ConditionalFilter.ConditionalBlock();
+						ConditionalBlock<Filter> block = new ConditionalBlock<Filter>();
 						Logical_expressionContext exprCtx = condition.logical_expression(blockIdx);
 						block.expr = createLogicalExpression(exprCtx); 
-						block.stage = new Stage<>(stage.getPipeline());
+						block.stage = new Stage<>();
 						parseFilteringStage(block.stage, condition.stage_definition(blockIdx));
 						filter.blocks.add(block);
 					}
 
 					if(condition.stage_definition().size() > condition.logical_expression().size()) {
-						filter.elseStage = new Stage<>(stage.getPipeline());
+						filter.elseStage = new Stage<>();
 						parseFilteringStage(filter.elseStage, condition.stage_definition(condition.stage_definition().size() - 1));
 					}
 					stage.add(filter);
@@ -324,6 +357,10 @@ public class PipelineBuilder {
 
 	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) {
 		Plugin_definitionContext pluginDefinition = pluginDecl.plugin_definition();
+		if(wrapper != null) {
+			injectInjectables(wrapper);
+		}
+		injectInjectables(plugin);
 		try {
 			for (Plugin_attributeContext attribute : pluginDefinition.plugin_attribute()) {
 				if (wrapper != null && haveField(wrapper.getClass(), attribute.IDENTIFIER().getText())) {
@@ -331,13 +368,31 @@ public class PipelineBuilder {
 				} else if(haveField(plugin.getClass(), attribute.IDENTIFIER().getText())) {
 					setObjectParameter(plugin, attribute);
 				} else {
-					throw new RuntimeException("plugin " + pluginDecl.IDENTIFIER() + " has no attribute '"
+					throw new RuntimeException("plugin '" + pluginDecl.IDENTIFIER() + "' has no attribute '"
 							+ attribute.IDENTIFIER().getText() + "'");
 				}
 			}
 			validateNonNull(plugin);
 		} catch(Exception e) {
 			throw new RuntimeException("Failed parsing configuration", e);
+		}
+	}
+
+	private void injectInjectables(Object plugin) {
+		for(var field : plugin.getClass().getDeclaredFields()) {
+			if(null != field.getAnnotation(Inject.class)) {
+				Class<?> fieldType = field.getType();
+				if(fieldType == FieldRefBuilder.class) {
+					try {
+						field.setAccessible(true);
+						field.set(plugin, new FieldRefBuilderImpl());
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						throw new IllegalStateException("Injection failure", e);
+					}
+				} else {
+					throw new IllegalArgumentException("Injected field " + field.getName() + " of non-supported type " + fieldType);
+				}
+			}
 		}
 	}
 
@@ -408,6 +463,10 @@ public class PipelineBuilder {
 			field.set(plugin, extractStringContent);
 			return;
 		}
+		if(field.getType() == StringProvider.class) {
+			field.set(plugin, new PrintfInterpolator(extractStringContent));
+			return;
+		}
 		for(Method m: field.getType().getDeclaredMethods()) {
 			if(m.getName().equals("valueOf") && m.getParameterCount() == 1 && m.getParameters()[0].getType() == String.class) {
 				m.setAccessible(true);
@@ -424,16 +483,6 @@ public class PipelineBuilder {
 		// Don't know if there's a cleaner way to do this...
 		hashValue = hashValue.substring(1, hashValue.length() - 1);
 		return hashValue;
-	}
-
-	private static StageType getStageType(Stage_declarationContext stage) {
-		if(stage.INPUT() != null)
-			return StageType.INPUT;
-		if(stage.FILTER() != null)
-			return StageType.FILTER;
-		if(stage.OUTPUT() != null)
-			return StageType.OUTPUT;
-		throw new IllegalArgumentException("Unknown stage type");
 	}
 
 	private static boolean haveField(Class<? extends Object> clazz, String name) {

@@ -49,12 +49,13 @@ public class FilterWrapper implements Filter {
 	public void start() {
 		inner.start();
 
-		for(var addFieldEntry: add_field.entrySet()) {
-			eventProcessors.add(new AddField(addFieldEntry.getKey(), addFieldEntry.getValue()));
+		FieldRefBuilderImpl fieldRefBuilder = new FieldRefBuilderImpl(); 
+		for(var entry: add_field.entrySet()) {
+			eventProcessors.add(new AddField(fieldRefBuilder.createFieldRef(entry.getKey()), entry.getValue()));
 		}
 
-		for(String removeFieldEntry: remove_field) {
-			eventProcessors.add(new RemoveField(removeFieldEntry));
+		for(String fieldEntry: remove_field) {
+			eventProcessors.add(new RemoveField(fieldRefBuilder.createFieldRef(fieldEntry)));
 		}
 
 		for(String addTag: add_tag) {

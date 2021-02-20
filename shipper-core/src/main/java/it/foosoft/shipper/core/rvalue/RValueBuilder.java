@@ -21,4 +21,16 @@ public class RValueBuilder {
 			return new ComplexFieldRefRvalue(identifiers);
 		}
 	}
+	
+	public static RValue makeFieldRefRValueFromString(String expr) {
+		// split on ][, this is needed for nested
+		String[] fields = expr.split("\\]\\[");
+		for(int i = 0; i < fields.length; i++) {
+			// simply drop ']' and '[' we don't need them 
+			String field = fields[i].replace("[", "");			
+			field = field.replace("]", "");
+			fields[i] = field;
+		}
+		return makeFieldRefRValue(fields);
+	}
 }

@@ -113,8 +113,8 @@ public class Shipper implements Callable<Integer> {
 		    }
 	    }
 	    if(debugOutput) {
-	    	pipeline.getOutput().clear();
-	    	pipeline.getOutput().add(new DebugOutput());
+	    	pipeline.getOutputStage().clear();
+	    	pipeline.getOutputStage().add(new DebugOutput());
 	    }
 
 		pipeline.start();

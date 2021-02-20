@@ -2,20 +2,21 @@ package it.foosoft.shipper.plugins.converters;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
+import it.foosoft.shipper.api.FieldRef;
 
 public class FloatConverter implements EventProcessor {
 
-	private String attrName;
+	private FieldRef fieldRef;
 
-	public FloatConverter(String attrName) {
-		this.attrName = attrName;
+	public FloatConverter(FieldRef fieldRef) {
+		this.fieldRef = fieldRef;
 	}
 
 	@Override
 	public void process(Event e) {
-		Object obj = e.getField(attrName);
+		Object obj = fieldRef.get(e);
 		if(obj != null) {
-			e.setField(attrName, Float.parseFloat(obj.toString()));
+			fieldRef.set(e, Float.parseFloat(obj.toString()));
 		}
 	}
 }

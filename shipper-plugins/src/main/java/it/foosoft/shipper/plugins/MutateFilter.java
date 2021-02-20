@@ -7,7 +7,10 @@ import java.util.Map;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
+import it.foosoft.shipper.api.FieldRef;
+import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.Param;
 import it.foosoft.shipper.plugins.converters.Converters;
 import it.foosoft.shipper.plugins.mutate.CopyField;
@@ -66,9 +69,15 @@ public class MutateFilter implements Filter {
 	@Param
 	public Map<String,String> copy = new HashMap<>();
 
-
-	private List<EventProcessor> eventProcessors = new ArrayList<>();
+	@Inject
+	FieldRefBuilder fieldRefBuilder;
 	
+	private List<EventProcessor> eventProcessors = new ArrayList<>();
+
+	
+	public MutateFilter() {
+		
+	}
 	
 	@Override
 	public boolean process(Event e) {
@@ -80,20 +89,20 @@ public class MutateFilter implements Filter {
 	@Override
 	public void start() {
 		for(var s: rename.entrySet()) {
-			FieldRef sourceField = new FieldRef(s.getKey());
-			FieldRef targetField = new FieldRef(s.getValue());
+			FieldRef sourceField = fieldRefBuilder.createFieldRef(s.getKey());
+			FieldRef targetField = fieldRefBuilder.createFieldRef(s.getValue());
 			eventProcessors.add(new RenameField(sourceField, targetField));
 		}
 
 		for(var convertEntry: convert.entrySet()) {
 			String fieldName = convertEntry.getKey();
 			String targetFormat = convertEntry.getValue();
-			eventProcessors.add(Converters.createConverter(fieldName, targetFormat));
+			eventProcessors.add(Converters.createConverter(fieldRefBuilder.createFieldRef(fieldName), targetFormat));
 		}
 		
 		for(var copyEntry: copy.entrySet()) {
-			FieldRef sourceField = new FieldRef(copyEntry.getKey());
-			FieldRef targetField = new FieldRef(copyEntry.getValue());
+			FieldRef sourceField = fieldRefBuilder.createFieldRef(copyEntry.getKey());
+			FieldRef targetField = fieldRefBuilder.createFieldRef(copyEntry.getValue());
 			eventProcessors.add(new CopyField(sourceField, targetField));
 		}
 /*		

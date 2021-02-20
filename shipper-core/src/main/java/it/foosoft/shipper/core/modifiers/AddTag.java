@@ -16,7 +16,7 @@ public class AddTag implements EventProcessor {
 
 	@Override
 	public void process(Event e) {
-		e.addTag(interpolator.interpolate(e));
+		e.addTag(interpolator.evaluate(e));
 	}
 
 }
