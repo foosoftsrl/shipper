@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import javax.validation.constraints.NotNull;
 
+import org.logstash.dissect.DissectResult;
 import org.logstash.dissect.Dissector;
 import org.slf4j.Logger;
 
@@ -53,18 +54,19 @@ public class LogstashDissectFilter implements Filter {
 
 	@Override
 	public boolean process(Event e) {
-		boolean successful = true;
+		boolean successful = false;
 		for(var pattern: contexts.entrySet()) {
 			Object attr = e.getField(pattern.getKey());
 			if(!(attr instanceof String)) {
 				LOG.warn("Unsupported field type for " + pattern.getKey());
-				successful = false;
-				continue;
+				return false;
 			}
-			String attrString = (String)attr;
 
+			String attrString = (String)attr;
 			Dissector context = pattern.getValue();
-			context.dissect(attrString.getBytes(), e);
+			DissectResult result = context.dissect(attrString.getBytes(), e);
+			if(!result.matched())
+				return false;
 			for(var converter: converters) {
 				converter.process(e);
 			}
