@@ -54,7 +54,7 @@ public class LogstashDissectFilter implements Filter {
 
 	@Override
 	public boolean process(Event e) {
-		boolean successful = false;
+		boolean successful = true;
 		for(var pattern: contexts.entrySet()) {
 			Object attr = e.getField(pattern.getKey());
 			if(!(attr instanceof String)) {
