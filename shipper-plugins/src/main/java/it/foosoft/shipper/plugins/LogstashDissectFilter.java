@@ -35,7 +35,7 @@ public class LogstashDissectFilter implements Filter {
 	public Map<String,String> mapping;
 
 	@Param
-	public String tag_on_failure;
+	public String[] tag_on_failure = new String[] {"_dissectfailure"};
 
 	@Param(description = "Type conversion (from string)")
 	public Map<String, String> convert_datatype = new HashMap<>();

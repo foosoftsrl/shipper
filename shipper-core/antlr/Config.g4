@@ -118,7 +118,7 @@ fieldref : fieldref_element+ ;
 fieldref_element : LBRACKET IDENTIFIER RBRACKET ;
 // TODO: (colin) plugin_declaration are allowed in array per original treetop grammar and seems related
 // TODO: (con't) to never-implemented channable codec. I am not allowing here.
-array : LBRACKET  array_element (COMA array_element)*  RBRACKET;
+array : LBRACKET  (array_element (COMA array_element)*)?  RBRACKET;
 array_element : IDENTIFIER | STRING | DECIMAL | array | hash ;
 
 hash : LBRACE hash_element* RBRACE ;

@@ -9,9 +9,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.krakens.grok.api.Grok;
 import io.krakens.grok.api.GrokCompiler;
 import io.krakens.grok.api.Match;
@@ -26,7 +23,7 @@ public class GrokFilter implements Filter {
 	String patterns_dir = "/etc/logstash/patterns";
 	
 	@Param
-	String tag_on_failure = "_grokparsefailure";
+	String[] tag_on_failure = new String[]{"_grokparsefailure"};
 	
 	@Param
 	Map<String,String> match = new HashMap<>();
@@ -63,7 +60,7 @@ public class GrokFilter implements Filter {
 			}
 		}
 		if(!atLeastOneMatch) {
-			event.addTag(tag_on_failure);
+			event.addTags(tag_on_failure);
 		}
 		return atLeastOneMatch;
 	}

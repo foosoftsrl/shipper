@@ -40,6 +40,7 @@ import com.logstash.ConfigParser.Hash_elementContext;
 import com.logstash.ConfigParser.In_expressionContext;
 import com.logstash.ConfigParser.Logical_expressionContext;
 import com.logstash.ConfigParser.Match_expressionContext;
+import com.logstash.ConfigParser.Negative_expressionContext;
 import com.logstash.ConfigParser.Plugin_attributeContext;
 import com.logstash.ConfigParser.Plugin_attribute_valueContext;
 import com.logstash.ConfigParser.Plugin_declarationContext;
@@ -62,10 +63,12 @@ import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.expressions.AndExpression;
 import it.foosoft.shipper.core.expressions.InExpression;
+import it.foosoft.shipper.core.expressions.NegateExpression;
 import it.foosoft.shipper.core.expressions.NotInExpression;
 import it.foosoft.shipper.core.expressions.OrExpression;
 import it.foosoft.shipper.core.expressions.RegexMatchExpression;
 import it.foosoft.shipper.core.expressions.RegexNotMatchExpression;
+import it.foosoft.shipper.core.expressions.RvalueExpression;
 import it.foosoft.shipper.core.rvalue.RValueArrayOfStrings;
 import it.foosoft.shipper.core.rvalue.RValueBuilder;
 import it.foosoft.shipper.core.rvalue.StringRValue;
@@ -297,7 +300,8 @@ public class PipelineBuilder {
 				throw new UnsupportedOperationException("Unsupported regexp match type");
 			}
 
-		} else if(rule instanceof In_expressionContext){
+		} 
+		else if(rule instanceof In_expressionContext){
 			In_expressionContext in = (In_expressionContext)rule;
 			ensure2Children(in.rvalue());
 			RvalueContext left = in.rvalue().get(0);
@@ -306,6 +310,14 @@ public class PipelineBuilder {
 				return new NotInExpression(makeRValue(left), makeRValue(right));
 			else
 				return new InExpression(makeRValue(left), makeRValue(right));
+		} 
+		else if(rule instanceof Negative_expressionContext){
+			Negative_expressionContext neg = (Negative_expressionContext)rule;
+			return new NegateExpression(createLogicalExpression(neg.logical_expression()));
+		} 
+		else if(rule instanceof RvalueContext) {
+			RvalueContext rValue = (RvalueContext)rule;
+			return new RvalueExpression(makeRValue(rValue));
 		} 
 		else if(exprCtx.OR() != null) {
 			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
@@ -457,20 +469,24 @@ public class PipelineBuilder {
 		}
 	}
 
-	private void setFieldValueString(Object plugin, Field field, String extractStringContent)
+	private void setFieldValueString(Object plugin, Field field, String valueStr)
 			throws IllegalAccessException, InvocationTargetException {
 		if(field.getType().isAssignableFrom(String.class)) {
-			field.set(plugin, extractStringContent);
+			field.set(plugin, valueStr);
 			return;
 		}
 		if(field.getType() == StringProvider.class) {
-			field.set(plugin, new PrintfInterpolator(extractStringContent));
+			field.set(plugin, new PrintfInterpolator(valueStr));
+			return;
+		}
+		if(field.getType() == String[].class) {
+			field.set(plugin, new String[] {valueStr});
 			return;
 		}
 		for(Method m: field.getType().getDeclaredMethods()) {
 			if(m.getName().equals("valueOf") && m.getParameterCount() == 1 && m.getParameters()[0].getType() == String.class) {
 				m.setAccessible(true);
-				field.set(plugin, m.invoke(null, extractStringContent));
+				field.set(plugin, m.invoke(null, valueStr));
 				return;
 			}
 		}

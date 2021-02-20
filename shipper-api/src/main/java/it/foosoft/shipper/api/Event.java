@@ -152,4 +152,10 @@ public interface Event {
 		return null;
 	}
 
+	default void addTags(String... tags) {
+		for(String tag: tags) {
+			addTag(tag);
+		}
+	}
+
 }

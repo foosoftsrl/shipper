@@ -22,7 +22,7 @@ public class GeoIpFilter implements Filter {
 	public Integer cache_size = 1000;
 	
 	@Param
-	public String tag_on_failure = "_geoip_lookup_failure";
+	public String[] tag_on_failure = new String[]{"_geoip_lookup_failure"};
 	
 
 	private GeoIPFilter geoIpFilter; 
@@ -34,8 +34,7 @@ public class GeoIpFilter implements Filter {
 			return false;
 		}
 		if(!geoIpFilter.handleEvent(e)) {
-			if(tag_on_failure != null)
-				e.addTag(tag_on_failure);
+			e.addTags(tag_on_failure);
 			return false;
 		}
 		return true;

@@ -17,7 +17,7 @@ public class UriParseFilter implements Filter {
 	public String source;
 	
 	@Param
-	public String tag_on_failure;
+	public String[] tag_on_failure = new String[0];
 	
 	@Override
 	public boolean process(Event evt) {
@@ -47,9 +47,7 @@ public class UriParseFilter implements Filter {
 	}
 	
 	public void handleFailure(Event e) {
-		if(tag_on_failure != null) {
-			e.addTag(tag_on_failure);
-		}
+		e.addTags(tag_on_failure);
 	}
 
 	@Override

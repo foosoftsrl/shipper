@@ -28,7 +28,7 @@ public class DissectFilter implements Filter {
 	public Map<String,String> mapping;
 
 	@Param
-	public String tag_on_failure;
+	public String[] tag_on_failure;
 
 	@Param
 	public Map<String, String> convert_datatype = new HashMap<>();
@@ -73,9 +73,7 @@ public class DissectFilter implements Filter {
 			converter.process(e);
 		}
 		if(!successful) {
-			if(tag_on_failure != null) {
-				e.addTag(tag_on_failure);
-			}
+			e.addTags(tag_on_failure);
 		}
 		return successful;
 	}

@@ -1,6 +1,8 @@
 package it.foosoft.shipper.core.rvalue;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.RValue;
@@ -31,6 +33,11 @@ public class SingleFieldRefRValue implements RValue {
 		if(obj instanceof Collection) {
 			return (Collection)obj;
 		}
-		throw new UnsupportedOperationException("Can't convert a field ref to a collection");
+		if(obj == null)
+			return Collections.emptyList();
+		if(obj instanceof String) {
+			return Collections.singleton(obj);
+		}
+		throw new UnsupportedOperationException("Can't convert this field ref to a collection");
 	}
 }
