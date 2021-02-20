@@ -126,12 +126,17 @@ public class EventImpl implements Event {
 	}
 
 	@Override
-	public Map<String, Object> getMetadata() {
-		return metadata;
+	public Map<String, Object> metadata() {
+		return Collections.unmodifiableMap(metadata);
 	}
 
 	public EventImpl withMetadata(String name, String value) {
 		setMetadata(name, value);
 		return this;
+	}
+
+	@Override
+	public @NotNull Map<String, Object> fields() {
+		return Collections.unmodifiableMap(fields);
 	}
 }

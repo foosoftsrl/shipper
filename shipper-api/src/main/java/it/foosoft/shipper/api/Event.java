@@ -80,6 +80,13 @@ public interface Event {
 	public @NotNull Set<String> fieldNames();
 
 	/**
+	 * Get an immutable collection of fields. 
+	 *  
+	 * @return collection of fields
+	 */
+	public @NotNull Map<String,Object> fields();
+
+	/**
 	 * Add a tag
 	 * 
 	 * @param tag
@@ -95,11 +102,11 @@ public interface Event {
 	Object getMetadata(String name);
 
 	/**
-	 * Get all metadata properties 
+	 * Get all metadata properties (unmodifiable) 
 	 * 
 	 * @return 
 	 */
-	Map<String,Object> getMetadata();
+	Map<String,Object> metadata();
 
 	/**
 	 * Set a metadata property, that is a property which should not be serialized 

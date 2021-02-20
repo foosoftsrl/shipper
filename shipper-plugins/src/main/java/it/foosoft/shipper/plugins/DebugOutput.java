@@ -1,5 +1,7 @@
 package it.foosoft.shipper.plugins;
 
+import java.util.HashMap;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -22,7 +24,12 @@ public class DebugOutput implements Output {
 	@Override
 	public void process(Event e) {
 		try {
-			System.err.println(writer.writeValueAsString(e));
+			HashMap map = new HashMap<>();
+			map.putAll(e.fields());
+			map.put("@metadata", e.metadata());
+			map.put("tags", e.tags());
+			map.put("@timestamp", e.getTimestamp());
+			System.err.println(writer.writeValueAsString(map));
 		} catch (JsonProcessingException e1) {
 			e1.printStackTrace();
 		}
