@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.logstash.ConfigLexer;
 import com.logstash.ConfigParser;
+import com.logstash.ConfigParser.Compare_expressionContext;
 import com.logstash.ConfigParser.Fieldref_elementContext;
 import com.logstash.ConfigParser.HashContext;
 import com.logstash.ConfigParser.Hash_elementContext;
@@ -62,6 +63,7 @@ import it.foosoft.shipper.api.RValue;
 import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.expressions.AndExpression;
+import it.foosoft.shipper.core.expressions.EqualsExpression;
 import it.foosoft.shipper.core.expressions.InExpression;
 import it.foosoft.shipper.core.expressions.NegateExpression;
 import it.foosoft.shipper.core.expressions.NotInExpression;
@@ -314,6 +316,13 @@ public class PipelineBuilder {
 		else if(rule instanceof Negative_expressionContext){
 			Negative_expressionContext neg = (Negative_expressionContext)rule;
 			return new NegateExpression(createLogicalExpression(neg.logical_expression()));
+		} 
+		else if(rule instanceof Compare_expressionContext){
+			Compare_expressionContext compare = (Compare_expressionContext)rule;
+			if(compare.EQ() != null) {
+				return new EqualsExpression(makeRValue(compare.rvalue(0)), makeRValue(compare.rvalue(1)));
+			}
+			throw new UnsupportedOperationException("Comparator not supported");
 		} 
 		else if(rule instanceof RvalueContext) {
 			RvalueContext rValue = (RvalueContext)rule;

@@ -99,8 +99,7 @@ logical_expression
  | LPAREN logical_expression RPAREN
  | rvalue
  ;
-// TODO: (colin) why not also accept: BANG logical_expression - are parens necessary?
-negative_expression : BANG LPAREN logical_expression RPAREN ;
+negative_expression : BANG logical_expression ;
 compare_expression
  : rvalue GT rvalue
  | rvalue GE rvalue

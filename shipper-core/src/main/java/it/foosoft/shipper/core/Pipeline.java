@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.foosoft.shipper.api.Bag;
-import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Input;
@@ -99,12 +98,6 @@ public class Pipeline {
 				wrapper.setStartStatus(props);
 			}
 		}
-	}
-
-	public Output addOutput(it.foosoft.shipper.api.Output.Factory outputPlugin) {
-		Output plugin = ((Output.Factory)outputPlugin).create();
-		outputStage.add(plugin);
-		return plugin;
 	}
 
 	public void start() {

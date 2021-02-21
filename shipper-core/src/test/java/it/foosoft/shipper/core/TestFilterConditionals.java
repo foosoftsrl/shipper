@@ -286,7 +286,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithAndConditionAndParentheses() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	public void testPipelineWithParentheses() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
 		String pipelineDef = """
 		filter {
 		    if (([message] in ["if"]) and ([message] in ["if"])) {
@@ -319,8 +319,135 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithMatch() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	public void testPipelineWithNegateExpression() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+		String pipelineDef = """
+		filter {
+		    if (!([message] in ["else"])) {
+		        set{field => "if"}
+		    } else {
+		        set{field => "else"}
+		    }
+		}
+		""";
 		
+		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
+		EasyMock.replay(manager);
+
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		assertEquals(1, pipeline.getFilteringStage().size());
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		assertEquals(1, cFilter.blocks.size());
+		assertEquals(1, cFilter.elseStage.size());
+
+		
+		Event evt;
+
+		evt = new EventImpl().withField("message", "if");
+		cFilter.process(evt);
+		assertEquals("if", evt.getField("field"));
+		
+		evt = new EventImpl().withField("message", "else");
+		cFilter.process(evt);
+		assertEquals("else", evt.getField("field"));
+	}
+
+	@Test
+	public void testPipelineWithNegateRValue() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+		String pipelineDef = """
+		filter {
+		    if ![message] {
+		        set{field => "nomessage"}
+		    } else {
+		        set{field => "message"}
+		    }
+		}
+		""";
+		
+		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
+		EasyMock.replay(manager);
+
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		assertEquals(1, pipeline.getFilteringStage().size());
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		assertEquals(1, cFilter.blocks.size());
+		assertEquals(1, cFilter.elseStage.size());
+
+		
+		Event evt;
+
+		evt = new EventImpl().withField("message", "if");
+		cFilter.process(evt);
+		assertEquals("message", evt.getField("field"));
+		
+		evt = new EventImpl();
+		cFilter.process(evt);
+		assertEquals("nomessage", evt.getField("field"));
+	}
+
+	@Test
+	public void testPipelineWithIfRValue() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+		String pipelineDef = """
+		filter {
+		    if [message] {
+		        set{field => "message"}
+		    } else {
+		        set{field => "nomessage"}
+		    }
+		}
+		""";
+		
+		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
+		EasyMock.replay(manager);
+
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		assertEquals(1, pipeline.getFilteringStage().size());
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		assertEquals(1, cFilter.blocks.size());
+		assertEquals(1, cFilter.elseStage.size());
+
+		
+		Event evt;
+
+		evt = new EventImpl().withField("message", "if");
+		cFilter.process(evt);
+		assertEquals("message", evt.getField("field"));
+		
+		evt = new EventImpl();
+		cFilter.process(evt);
+		assertEquals("nomessage", evt.getField("field"));
+	}
+
+	@Test
+	public void testPipelineWithCompareExpression() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+		String pipelineDef = """
+		filter {
+		    if [message] == "test" {
+		        set{field => "match"}
+		    } else {
+		        set{field => "nomatch"}
+		    }
+		}
+		""";
+		
+		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
+		EasyMock.replay(manager);
+
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		assertEquals(1, pipeline.getFilteringStage().size());
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		assertEquals(1, cFilter.blocks.size());
+		assertEquals(1, cFilter.elseStage.size());
+
+		
+		Event evt;
+
+		evt = new EventImpl().withField("message", "test");
+		cFilter.process(evt);
+		assertEquals("match", evt.getField("field"));
+		
+		evt = new EventImpl().withField("message", "other");
+		cFilter.process(evt);
+		assertEquals("nomatch", evt.getField("field"));
 	}
 
 }
