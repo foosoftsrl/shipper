@@ -33,10 +33,10 @@ public class Shipper implements Callable<Integer> {
 	
 	static ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 
-	@Option(names = {"-p", "--pipeline"}, description = "logstash pipeline (single file), overrides --pipelines")
+	@Option(names = {"--pipeline"}, description = "logstash pipeline (single file), overrides --pipelines")
     private File pipelineFile = null;
 	
-	@Option(names = {"--pipelines"}, description = "logstash pipelines")
+	@Option(names = {"-p", "--pipelines"}, description = "logstash pipelines")
     private File pipelinesFile = new File("/etc/shipper/pipelines.yml");
 
 	@Option(names = {"-t", "--thread-count"}, description = "Threads used for filtering stage")
