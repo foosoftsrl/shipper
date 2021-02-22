@@ -1,5 +1,7 @@
 package it.foosoft.shipper.plugins;
 
+import java.util.Arrays;
+
 import javax.validation.constraints.NotNull;
 
 import it.foosoft.shipper.api.Event;
@@ -16,6 +18,9 @@ public class GeoIpFilter implements Filter {
 	@NotNull
 	@ConfigurationParm
 	public String target = "geoip";
+
+	@ConfigurationParm
+	public String[] fields = null;
 
 	@ConfigurationParm
 	public String database;
@@ -55,7 +60,7 @@ public class GeoIpFilter implements Filter {
 			throw new IllegalStateException("GeoIp filter's Source Configuration Option is mandatory");
 		}
 
-		geoIpFilter = new GeoIPFilter(source, target, null, database, cache_size);
+		geoIpFilter = new GeoIPFilter(source, target, fields == null ? null: Arrays.asList(fields), database, cache_size);
 	}
 
 	@Override
