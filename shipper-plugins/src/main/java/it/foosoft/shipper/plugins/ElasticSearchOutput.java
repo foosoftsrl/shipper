@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.plugins.elastic.BulkRequestInputStream;
 
@@ -49,22 +49,22 @@ public class ElasticSearchOutput implements BatchOutput {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ElasticSearchOutput.class);
 
-	@Param
+	@ConfigurationParm
 	public String[] hosts = new String[] {"127.0.0.1:9200"};
 	
-	@Param
+	@ConfigurationParm
 	public StringProvider index;
 	
-	@Param
+	@ConfigurationParm
 	public String user;
 
-	@Param
+	@ConfigurationParm
 	public String password;
 
-	@Param
+	@ConfigurationParm
 	private int outstandingRequests = 8;
 	
-	@Param
+	@ConfigurationParm
 	public boolean compress = true;
 	
 	private RestClient client;

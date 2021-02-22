@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Output;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
@@ -22,7 +22,7 @@ public class TestOutputConditionals {
 	
 	class SimpleOutputImpl implements Output {
 		int counter = 0;
-		@Param
+		@ConfigurationParm
 		String field;
 
 		@Override

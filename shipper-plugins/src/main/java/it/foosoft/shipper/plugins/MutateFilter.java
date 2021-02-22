@@ -11,7 +11,7 @@ import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Inject;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
 import it.foosoft.shipper.plugins.mutate.CopyField;
 import it.foosoft.shipper.plugins.mutate.RenameField;
@@ -27,7 +27,7 @@ public class MutateFilter implements Filter {
 	//@Param
 	//public Map<String,String> coerce = new HashMap<>();
 
-	@Param
+	@ConfigurationParm
 	public Map<String,String> rename = new HashMap<>();
 
 	//@Param
@@ -36,7 +36,7 @@ public class MutateFilter implements Filter {
 	//@Param
 	//public Map<String,String> replace = new HashMap<>();
 
-	@Param
+	@ConfigurationParm
 	public Map<String,String> convert = new HashMap<>();
 
 	//@Param
@@ -66,7 +66,7 @@ public class MutateFilter implements Filter {
 	//@Param
 	//public String[] merge = new String[0];
 
-	@Param
+	@ConfigurationParm
 	public Map<String,String> copy = new HashMap<>();
 
 	@Inject

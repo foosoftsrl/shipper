@@ -8,15 +8,15 @@ import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class UriParseFilter implements Filter {
 	private static final Logger LOG = LoggerFactory.getLogger(UriParseFilter.class);
 	
-	@Param
+	@ConfigurationParm
 	public String source;
 	
-	@Param
+	@ConfigurationParm
 	public String[] tag_on_failure = new String[0];
 	
 	@Override

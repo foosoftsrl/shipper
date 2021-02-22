@@ -14,23 +14,23 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import ua_parser.Client;
 import ua_parser.Parser;
 
 public class UserAgentFilter implements Filter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(UserAgentFilter.class);
-	@Param(description="name of the field to parse")
+	@ConfigurationParm(description="name of the field to parse")
 	public String source;
 	
-	@Param(description="path to ua-parser regexes.yaml (see github)")
+	@ConfigurationParm(description="path to ua-parser regexes.yaml (see github)")
 	public String regexes;
 
-	@Param
+	@ConfigurationParm
 	public String target;
 
-	@Param
+	@ConfigurationParm
 	public int cacheSize = 32768;
 
 	private Parser uaParser;

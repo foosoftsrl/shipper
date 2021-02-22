@@ -14,21 +14,21 @@ import io.krakens.grok.api.GrokCompiler;
 import io.krakens.grok.api.Match;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class GrokFilter implements Filter {
 	private static final Logger LOG = LoggerFactory.getLogger(GrokFilter.class);
 	
-	@Param
+	@ConfigurationParm
 	String patterns_dir = "/etc/logstash/patterns";
 	
-	@Param
+	@ConfigurationParm
 	String[] tag_on_failure = new String[]{"_grokparsefailure"};
 	
-	@Param
+	@ConfigurationParm
 	Map<String,String> match = new HashMap<>();
 
-	@Param
+	@ConfigurationParm
 	boolean break_on_match;
 
 	Map<String, Grok> groks;

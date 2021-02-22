@@ -1,28 +1,33 @@
 package it.foosoft.shipper.plugins;
 
+import javax.validation.constraints.NotNull;
+
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.geoip.GeoIPFilter;
 
 public class GeoIpFilter implements Filter {
-	@Param
+
+	@NotNull
+	@ConfigurationParm
 	public String source;
 
-	@Param
-	public String target;
+	@NotNull
+	@ConfigurationParm
+	public String target = "geoip";
 
-	@Param
+	@ConfigurationParm
 	public String database;
 
-	@Param
+	@ConfigurationParm
 	public String default_database_type;
 
-	@Param
+	@ConfigurationParm
 	public Integer cache_size = 1000;
 	
-	@Param
-	public String[] tag_on_failure = new String[]{"_geoip_lookup_failure"};
+	@ConfigurationParm
+	public String[] tag_on_failure = new String[] {"_geoip_lookup_failure"};
 	
 
 	private GeoIPFilter geoIpFilter; 
@@ -46,6 +51,10 @@ public class GeoIpFilter implements Filter {
 		if(db == null) {
 			throw new UnsupportedOperationException("No support for logstash's default databases"); 
 		}
+		if(source == null) {
+			throw new IllegalStateException("GeoIp filter's Source Configuration Option is mandatory");
+		}
+
 		geoIpFilter = new GeoIPFilter(source, target, null, database, cache_size);
 	}
 

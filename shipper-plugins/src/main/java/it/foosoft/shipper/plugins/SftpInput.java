@@ -28,33 +28,33 @@ import com.jcraft.jsch.SftpException;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.InputContext;
 import it.foosoft.shipper.api.Input;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class SftpInput implements Input {
 	private static final Logger LOG = LoggerFactory.getLogger(SftpInput.class);
 
-	@Param
+	@ConfigurationParm
 	String username;
 
-	@Param
+	@ConfigurationParm
 	String password;
 
-	@Param
+	@ConfigurationParm
 	String remoteHost;
 	
-	@Param
+	@ConfigurationParm
 	String remoteDirectory = "/";
 
-	@Param
+	@ConfigurationParm
 	Integer olderThan = 30;
 
-	@Param
+	@ConfigurationParm
 	boolean remove = false;
 
-	@Param
+	@ConfigurationParm
 	int threads = 1;
 	
-	@Param
+	@ConfigurationParm
 	int scanPeriod = 60;
 
 	private InputContext ctx;

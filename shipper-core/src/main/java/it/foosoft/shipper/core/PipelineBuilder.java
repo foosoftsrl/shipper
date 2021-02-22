@@ -163,7 +163,7 @@ public class PipelineBuilder {
 				throw new UnsupportedOperationException("No support for conditionals in input/output");
 			}
 			var pluginDecl = (Plugin_declarationContext)child;
-			LOG.info("Input plugin " + pluginDecl.IDENTIFIER());
+			LOG.debug("Input plugin " + pluginDecl.IDENTIFIER());
 			Factory inputPlugin = pluginFactory.findInputPlugin(pluginDecl.IDENTIFIER().getText());
 			pipeline.addInput(inputPlugin, input->parsePluginConfig(input, input.wrapped, pluginDecl));
 		}
@@ -206,7 +206,7 @@ public class PipelineBuilder {
 				}
 			} else if(child instanceof Plugin_declarationContext) {
 				var pluginDecl = (Plugin_declarationContext)child;
-				LOG.info("Output plugin " + pluginDecl.IDENTIFIER());
+				LOG.debug("Output plugin " + pluginDecl.IDENTIFIER());
 				PipelineComponent.Factory outputPlugin = pluginFactory.findOutputPlugin(pluginDecl.IDENTIFIER().getText());
 
 				if(outputPlugin instanceof BatchOutput.Factory) {
@@ -267,7 +267,7 @@ public class PipelineBuilder {
 			}
 			else if(child instanceof Plugin_declarationContext) {
 				var pluginDecl = (Plugin_declarationContext)child;
-				LOG.info("Filter plugin " + pluginDecl.IDENTIFIER());
+				LOG.debug("Filter plugin " + pluginDecl.IDENTIFIER());
 				it.foosoft.shipper.api.Filter.Factory filterPlugin = pluginFactory.findFilterPlugin(pluginDecl.IDENTIFIER().getText());
 				Filter filter = filterPlugin.create();
 				FilterWrapper wrapper = new FilterWrapper(filter);
@@ -432,7 +432,7 @@ public class PipelineBuilder {
 
 	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
-		LOG.info("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
+		LOG.debug("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
 		Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
 		field.setAccessible(true);
 		if (value.STRING() != null) {

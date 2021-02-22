@@ -10,13 +10,13 @@ import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class UrlDecodeFilter implements Filter {
 	private static final Logger LOG = LoggerFactory.getLogger(UrlDecodeFilter.class);
 	
 	@NotNull
-	@Param(description="The field to decode")
+	@ConfigurationParm(description="The field to decode")
 	String field;
 	
 	URLDecoder urlDecoder = new URLDecoder();

@@ -8,17 +8,17 @@ import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class DateFilter implements Filter {
 	private static final Logger LOG = LoggerFactory.getLogger(DateFilter.class);
-	@Param
+	@ConfigurationParm
 	public String locale;
 
-	@Param
+	@ConfigurationParm
 	public String timezone;
 
-	@Param
+	@ConfigurationParm
 	public String[] match;
 
 	private String fieldName;

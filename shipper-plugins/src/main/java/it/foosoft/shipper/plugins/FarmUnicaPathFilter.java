@@ -4,13 +4,13 @@ import java.util.regex.Pattern;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class FarmUnicaPathFilter implements Filter {
-	@Param
+	@ConfigurationParm
 	public String source;
 	
-	@Param
+	@ConfigurationParm
 	public String prefix = "/farmunica/\\d\\d\\d\\d/\\d\\d";
 
 	private Pattern pattern;

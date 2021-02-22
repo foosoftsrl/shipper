@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.Output;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 /**
  * BatchAdapter's will expose a simple "push" interface to the pipeline, and a "pull" OutputContext to the BatchOutput plugin
@@ -19,7 +19,7 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 
 	public BatchOutput innerOutput;
 
-	@Param
+	@ConfigurationParm
 	String id;
 	
 	public BatchAdapter(BatchOutput.Factory outputPlugin) {

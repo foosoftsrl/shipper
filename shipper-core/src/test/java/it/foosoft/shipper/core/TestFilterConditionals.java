@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
@@ -19,7 +19,7 @@ public class TestFilterConditionals {
 	PluginManager manager = EasyMock.createMock(PluginManager.class);
 	
 	class SimpleFilterImpl implements Filter {
-		@Param
+		@ConfigurationParm
 		String field;
 
 		@Override

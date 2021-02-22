@@ -20,15 +20,15 @@ import org.slf4j.LoggerFactory;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class TestInput implements Input {
 	private static final Logger LOG = LoggerFactory.getLogger(TestInput.class);
 
-	@Param
+	@ConfigurationParm
 	String path;
 	
-	@Param
+	@ConfigurationParm
 	boolean loop = false;
 
 	private InputContext ctx;

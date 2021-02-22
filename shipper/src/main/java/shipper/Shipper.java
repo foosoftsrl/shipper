@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,8 +45,11 @@ public class Shipper implements Callable<Integer> {
     @Option(names = {"-b", "--batch-size"}, description = "Batch size for filtering and output stage")
     private int batchSize = 512;
 
-    @Option(names = {"--debug-output"}, description = "Remove all outputs and replace them with a debug output")
-    private boolean debugOutput = false;
+    @Option(names = {"-o"}, description = "Remove all outputs and replace them with a file output. Use '-' for stdout")
+    private String output = null;
+
+    @Option(names = {"-i"}, description = "Remove all input and replace them with a (single) file input")
+    private String input = null;
 
     public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
         int exitCode = new CommandLine(new Shipper()).execute(args);
@@ -112,12 +114,25 @@ public class Shipper implements Callable<Integer> {
 		    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, bais);
 		    }
 	    }
-	    if(debugOutput) {
+	    if(output != null) {
 	    	pipeline.getOutputStage().clear();
-	    	pipeline.getOutputStage().add(new DebugOutput());
+	    	File outputFile = null;
+	    	if(!output.equals("-")) {
+	    		outputFile = new File(output);
+	    	}
+	    	pipeline.getOutputStage().add(new DebugOutput(outputFile));
 	    }
 
-		pipeline.start();
+	    if(input != null) {
+	    	pipeline.getInputs().clear();
+	    	pipeline.addInput(ctx->{
+	    		return new ShipperAdHocInput(ctx, input, ()->{
+            		stopRequest.set(true);
+	    		});
+	    	}, unused->{});
+	    }
+
+	    pipeline.start();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override

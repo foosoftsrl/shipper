@@ -10,7 +10,7 @@ import javax.validation.constraints.NotNull;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.Filter;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.core.modifiers.AddField;
 import it.foosoft.shipper.core.modifiers.AddTag;
 import it.foosoft.shipper.core.modifiers.RemoveField;
@@ -23,16 +23,16 @@ import it.foosoft.shipper.core.modifiers.RemoveField;
  */
 public class FilterWrapper implements Filter {
 
-	@Param
+	@ConfigurationParm
 	public String id;
 
-	@Param
+	@ConfigurationParm
 	public String[] remove_field = new String[0];
 
-	@Param
+	@ConfigurationParm
 	public Map<String,String> add_field = new HashMap<>();
 
-	@Param
+	@ConfigurationParm
 	public String[] add_tag = new String[0];
 
 	@NotNull

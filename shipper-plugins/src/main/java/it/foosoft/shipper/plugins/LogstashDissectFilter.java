@@ -18,7 +18,7 @@ import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Inject;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
 
 /**
@@ -34,10 +34,10 @@ public class LogstashDissectFilter implements Filter {
 	@NotNull
 	public Map<String,String> mapping;
 
-	@Param
+	@ConfigurationParm
 	public String[] tag_on_failure = new String[] {"_dissectfailure"};
 
-	@Param(description = "Type conversion (from string)")
+	@ConfigurationParm(description = "Type conversion (from string)")
 	public Map<String, String> convert_datatype = new HashMap<>();
 
 	@Inject

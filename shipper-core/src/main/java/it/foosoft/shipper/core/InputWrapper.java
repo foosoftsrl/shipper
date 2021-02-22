@@ -7,7 +7,7 @@ import it.foosoft.shipper.api.Bag;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 /**
  * An input decorator which implements common logic (add_field, add_tag...) 
@@ -17,16 +17,16 @@ import it.foosoft.shipper.api.Param;
  */
 public class InputWrapper implements Input, InputContext {
 
-	@Param
+	@ConfigurationParm
 	public Map<String,String> add_field = new HashMap<>();
 
-	@Param
+	@ConfigurationParm
 	public String[] add_tag = new String[0];
 
-	@Param
+	@ConfigurationParm
 	public String type = null;
 
-	@Param
+	@ConfigurationParm
 	public String id;
 	
 	public final Input wrapped;

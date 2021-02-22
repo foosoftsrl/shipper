@@ -12,7 +12,7 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.Inject;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
@@ -24,7 +24,7 @@ public class TestInjection {
 		@Inject
 		FieldRefBuilder fieldRefBuilder;
 		
-		@Param
+		@ConfigurationParm
 		String field;
 
 		@Override

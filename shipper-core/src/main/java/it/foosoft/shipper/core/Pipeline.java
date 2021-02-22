@@ -125,7 +125,7 @@ public class Pipeline {
 			LOG.info("Stopped input queue");
 			// now wait for the pollers to stop
 			executor.shutdown();
-			if(!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+			if(!executor.awaitTermination(60, TimeUnit.SECONDS)) {
 				LOG.warn("Stopping the filter workers took too long, giving up");
 			} 
 			else {

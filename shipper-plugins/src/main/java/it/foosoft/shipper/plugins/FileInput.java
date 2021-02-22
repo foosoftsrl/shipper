@@ -30,7 +30,7 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FileWalker;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
-import it.foosoft.shipper.api.Param;
+import it.foosoft.shipper.api.ConfigurationParm;
 
 public class FileInput implements Input {
 	private static final Logger LOG = LoggerFactory.getLogger(FileInput.class);
@@ -47,27 +47,27 @@ public class FileInput implements Input {
     }
 	
     @NotNull
-	@Param
+	@ConfigurationParm
 	String path;
 
 	public static enum FileCompleteAction { delete; }
 
-	@Param
+	@ConfigurationParm
 	FileCompleteAction file_completed_action = FileCompleteAction.delete;
 
 	public static enum Mode { read; }
 
 	@NotNull
-    @Param
+    @ConfigurationParm
 	Mode mode;
 
-    @Param
+    @ConfigurationParm
 	Object sincedb_clean_after;
 
-    @Param
+    @ConfigurationParm
 	int threads = 1;
 	
-	@Param
+	@ConfigurationParm
 	int discover_interval = 15;
 
 	private InputContext ctx;
