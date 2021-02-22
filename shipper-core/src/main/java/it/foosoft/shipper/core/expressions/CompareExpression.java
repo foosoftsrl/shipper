@@ -6,8 +6,8 @@ import it.foosoft.shipper.core.LogicalExpression;
 
 public abstract class CompareExpression implements LogicalExpression {
 
-	private RValue left;
-	private RValue right;
+	protected final RValue left;
+	protected final RValue right;
 
 	public CompareExpression(RValue left, RValue right) {
 		this.left = left;

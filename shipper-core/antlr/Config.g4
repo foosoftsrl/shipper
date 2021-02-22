@@ -10,6 +10,7 @@ INPUT : 'input';
 FILTER : 'filter';
 OUTPUT : 'output';
 
+COMMAT : '@';
 LBRACE : '{';
 RBRACE : '}';
 LPAREN : '(';
@@ -73,7 +74,7 @@ fragment RE_escape    : BSLASH (BSLASH | SLASH | '.' | 'w');
 REGEX     		     : SLASH ('.' | RE_char | RE_alter | RE_chgroup | RE_opt | RE_quant | RE_group | RE_escape)* SLASH;
 
 DECIMAL : '-'?[0-9]+('.'[0-9]+)? ;
-IDENTIFIER : [a-zA-Z_][a-zA-Z_0-9-]* ;
+IDENTIFIER : COMMAT?[a-zA-Z_][a-zA-Z_0-9-]* ;
 // ignore whitespaces and comments
 WS : [ \r\t\n\u000C]+ -> skip ;
 COMMENT : HASH .+? (NL|EOF) -> skip ;

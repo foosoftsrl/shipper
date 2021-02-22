@@ -15,4 +15,8 @@ public class EqualsExpression extends CompareExpression {
 		return Objects.equals(left, right);
 	}
 
+	@Override
+	public String toString() {
+		return left + " == " + right;
+	}
 }
