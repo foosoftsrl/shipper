@@ -4,14 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -456,7 +455,7 @@ public class PipelineBuilder {
 			field.set(plugin, s.stream().toArray(String[]::new));
 		} else if(value.hash() != null) {
 			HashContext hashCtx = value.hash();
-			Map<String,Object> kv = new HashMap<>();
+			Map<String,Object> kv = new LinkedHashMap<>();
 			for(Hash_elementContext elmCtx: hashCtx.hash_element()) {
 				if(elmCtx.STRING() == null) {
 					throw new UnsupportedOperationException("No support for this hash key type... expected a string");

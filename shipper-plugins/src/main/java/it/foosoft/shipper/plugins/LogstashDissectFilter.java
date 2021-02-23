@@ -1,7 +1,6 @@
 package it.foosoft.shipper.plugins;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,7 @@ public class LogstashDissectFilter implements FilterPlugin {
 	private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(LogstashDissectFilter.class);
 	
 	@NotNull
-	public Map<String,String> mapping;
+	public Map<String,String> mapping = new LinkedHashMap<>();
 
 	@ConfigurationParm
 	public String[] tag_on_failure = new String[] {"_dissectfailure"};
@@ -51,13 +50,17 @@ public class LogstashDissectFilter implements FilterPlugin {
 		List<String> fields = new ArrayList<>();
 	}
 
-	private Map<String,Dissector> contexts = new HashMap<>();
+	private Map<String,Dissector> contexts = new LinkedHashMap<>();
 
 	@Override
 	public boolean process(Event e) {
 		boolean successful = true;
 		for(var pattern: contexts.entrySet()) {
 			Object attr = e.getField(pattern.getKey());
+			if(attr == null) {
+				LOG.warn("Attribute {} is null", pattern.getKey());
+				return false;
+			}
 			if(!(attr instanceof String)) {
 				LOG.warn("Unsupported field type for " + pattern.getKey());
 				return false;
