@@ -2,6 +2,7 @@ package it.foosoft.shipper.plugins;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,12 +14,12 @@ import org.logstash.dissect.DissectResult;
 import org.logstash.dissect.Dissector;
 import org.slf4j.Logger;
 
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
-import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
 
 /**
@@ -38,7 +39,7 @@ public class LogstashDissectFilter implements FilterPlugin {
 	public String[] tag_on_failure = new String[] {"_dissectfailure"};
 
 	@ConfigurationParm(description = "Type conversion (from string)")
-	public Map<String, String> convert_datatype = new HashMap<>();
+	public Map<String, String> convert_datatype = new LinkedHashMap<>();
 
 	@Inject
 	public FieldRefBuilder fieldRefBuilder;

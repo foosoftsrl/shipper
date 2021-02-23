@@ -48,8 +48,11 @@ public class Shipper implements Callable<Integer> {
     @Option(names = {"-o"}, description = "Remove all outputs and replace them with a file output. Use '-' for stdout")
     private String output = null;
 
-    @Option(names = {"-i"}, description = "Remove all input and replace them with a (single) file input")
+    @Option(names = {"-i", "--input"}, description = "Remove all input and replace them with a (single) file input")
     private String input = null;
+
+    @Option(names = {"--input-tag"}, description = "Tag added when using file input")
+    private String inputTag = null;
 
     public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
         int exitCode = new CommandLine(new Shipper()).execute(args);
