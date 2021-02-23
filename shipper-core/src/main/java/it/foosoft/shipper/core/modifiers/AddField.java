@@ -20,4 +20,16 @@ public class AddField implements EventProcessor {
 		fieldRef.set(e, interpolator.evaluate(e));
 	}
 
+	public static EventProcessor create(FieldRef fieldRef, Object value) {
+		if(value instanceof Boolean) {
+			return evt->{
+				fieldRef.set(evt, value);
+			};
+		} else if(value instanceof String) {
+			return new AddField(fieldRef, (String)value);
+		} else {
+			throw new UnsupportedOperationException("Can't Add this field: " + value);
+		}
+	}
+
 }

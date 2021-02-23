@@ -12,15 +12,15 @@ import org.slf4j.LoggerFactory;
 import io.krakens.grok.api.Grok;
 import io.krakens.grok.api.GrokCompiler;
 import io.krakens.grok.api.Match;
-import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.ConfigurationParm;
+import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.FilterPlugin;
 
-public class GrokFilter implements Filter {
+public class GrokFilter implements FilterPlugin {
 	private static final Logger LOG = LoggerFactory.getLogger(GrokFilter.class);
 	
 	@ConfigurationParm
-	String patterns_dir = "/etc/logstash/patterns";
+	File[] patterns_dir = new File[0];
 	
 	@ConfigurationParm
 	String[] tag_on_failure = new String[]{"_grokparsefailure"};
@@ -70,14 +70,16 @@ public class GrokFilter implements Filter {
 		GrokCompiler compiler = GrokCompiler.newInstance();
 		compiler.registerDefaultPatterns();
 		groks = new HashMap<>();
-		new File(patterns_dir).listFiles((dir,fileName)->{
-			try(FileReader reader = new FileReader(new File(dir, fileName))) {
-				compiler.register(reader);
-			} catch (IOException e) {
-				LOG.warn("Failed reading pattern {}: {}", fileName, e.getMessage());
-			}
-			return false;
-		});
+		for(File pattern_dir: patterns_dir) {
+			pattern_dir.listFiles((dir,fileName)->{
+				try(FileReader reader = new FileReader(new File(dir, fileName))) {
+					compiler.register(reader);
+				} catch (IOException e) {
+					LOG.warn("Failed reading pattern {}: {}", fileName, e.getMessage());
+				}
+				return false;
+			});
+		}
 		for(Map.Entry<String,String> entry: match.entrySet()) {
 			groks.put(entry.getKey(), compiler.compile(entry.getValue()));
 		}

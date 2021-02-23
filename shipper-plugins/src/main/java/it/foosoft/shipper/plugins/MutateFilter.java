@@ -9,7 +9,7 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.FieldRefBuilder;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
@@ -22,7 +22,7 @@ import it.foosoft.shipper.plugins.mutate.RenameField;
  * @author luca
  *
  */
-public class MutateFilter implements Filter {
+public class MutateFilter implements FilterPlugin {
 
 	//@Param
 	//public Map<String,String> coerce = new HashMap<>();

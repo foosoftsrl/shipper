@@ -49,7 +49,7 @@ public class TestPipelineInputStage {
 		
 		LinkedBlockingQueue<Event> queue = new LinkedBlockingQueue<>();
 		
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		pipeline.addOutput(new Output() {
 			@Override
 			public void process(Event e) {

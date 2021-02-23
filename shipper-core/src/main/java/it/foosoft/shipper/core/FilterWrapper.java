@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.core.modifiers.AddField;
 import it.foosoft.shipper.core.modifiers.AddTag;
@@ -30,17 +30,17 @@ public class FilterWrapper implements Filter {
 	public String[] remove_field = new String[0];
 
 	@ConfigurationParm
-	public Map<String,String> add_field = new HashMap<>();
+	public Map<String,Object> add_field = new HashMap<>();
 
 	@ConfigurationParm
 	public String[] add_tag = new String[0];
 
 	@NotNull
-	private final Filter inner;
+	private final FilterPlugin inner;
 
 	private List<EventProcessor> eventProcessors = new ArrayList<>();
 	
-	public FilterWrapper(@NotNull Filter inner) {
+	public FilterWrapper(@NotNull FilterPlugin inner) {
 		this.inner = inner;
 	}
 
@@ -51,7 +51,8 @@ public class FilterWrapper implements Filter {
 
 		FieldRefBuilderImpl fieldRefBuilder = new FieldRefBuilderImpl(); 
 		for(var entry: add_field.entrySet()) {
-			eventProcessors.add(new AddField(fieldRefBuilder.createFieldRef(entry.getKey()), entry.getValue()));
+			Object value = entry.getValue();
+			eventProcessors.add(AddField.create(fieldRefBuilder.createFieldRef(entry.getKey()), value));
 		}
 
 		for(String fieldEntry: remove_field) {
@@ -69,13 +70,12 @@ public class FilterWrapper implements Filter {
 	}
 
 	@Override
-	public boolean process(Event e) {
+	public void process(Event e) {
 		if(inner.process(e)) {
 			for(var processor: eventProcessors) {
 				processor.process(e);
 			}
 		}
-		return true;
 	}
 
 	public String getId() {
@@ -83,7 +83,7 @@ public class FilterWrapper implements Filter {
 	}
 
 
-	public Filter getInner() {
+	public FilterPlugin getInner() {
 		return inner;
 	}
 

@@ -9,7 +9,7 @@ import org.easymock.EasyMock;
 import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
@@ -18,7 +18,7 @@ public class TestFilterConditionals {
 
 	PluginManager manager = EasyMock.createMock(PluginManager.class);
 	
-	class SimpleFilterImpl implements Filter {
+	class SimpleFilterImpl implements FilterPlugin {
 		@ConfigurationParm
 		String field;
 
@@ -46,7 +46,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(2, cFilter.blocks.size());
@@ -85,7 +85,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -119,7 +119,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -152,7 +152,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -189,7 +189,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -226,7 +226,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -263,7 +263,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -300,7 +300,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -333,7 +333,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -366,7 +366,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -399,7 +399,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());
@@ -432,7 +432,7 @@ public class TestFilterConditionals {
 		EasyMock.expect(manager.findFilterPlugin("set")).andReturn(()->new SimpleFilterImpl()).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
 		assertEquals(1, cFilter.blocks.size());

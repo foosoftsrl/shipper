@@ -55,7 +55,7 @@ public class TestOutputConditionals {
 		EasyMock.expect(manager.findOutputPlugin("out")).andReturn(a).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getOutputStage().size());
 		ConditionalOutput cFilter = (ConditionalOutput)pipeline.getOutputStage().get(0);
 		assertEquals(2, cFilter.blocks.size());

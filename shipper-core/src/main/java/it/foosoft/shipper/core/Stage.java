@@ -6,8 +6,6 @@ import it.foosoft.shipper.api.PipelineComponent;
 
 public class Stage<T extends PipelineComponent> extends ArrayList<T> implements PipelineComponent {
 
-	private Pipeline pipeline;
-
 	public Stage() {
 	}
 

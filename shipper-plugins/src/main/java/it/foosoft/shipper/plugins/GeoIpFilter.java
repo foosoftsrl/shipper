@@ -5,11 +5,11 @@ import java.util.Arrays;
 import javax.validation.constraints.NotNull;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.geoip.GeoIPFilter;
 
-public class GeoIpFilter implements Filter {
+public class GeoIpFilter implements FilterPlugin {
 
 	@NotNull
 	@ConfigurationParm

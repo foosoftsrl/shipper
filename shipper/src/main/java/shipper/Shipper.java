@@ -92,27 +92,19 @@ public class Shipper implements Callable<Integer> {
 		    PipelineCfg pipelineCfg = pipelines[0];
 
 		    byte[] buf;
-		    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-		    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
-		    	String globPatternStr = globPattern.toString().replace("\\", "/");
-		    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
-		        List<Path> cfgFilePathList = FileWalker.walk(globPatternStr);
-		        cfgFilePathList.sort((a,b)->{
-		        	return a.compareTo(b);
-		        });
-				for(Path path: cfgFilePathList) {
-					LOG.info("Found configuration file {}", path.toString());
-					Files.copy(path, baos);
-		        };
-			    buf = baos.toByteArray();
-		    }
+	    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
+	    	String globPatternStr = globPattern.toString().replace("\\", "/");
+	    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
+	        List<Path> cfgFilePathList = FileWalker.walk(globPatternStr);
+	        cfgFilePathList.sort((a,b)->{
+	        	return a.compareTo(b);
+	        });
 		    Configuration cfg = new Configuration(
 		    		pipelineCfg.workers != null ? pipelineCfg.workers: this.threadCount, 
     				pipelineCfg.batchSize != null ? pipelineCfg.batchSize: this.batchSize
 		    );
-		    try (ByteArrayInputStream bais = new ByteArrayInputStream(buf)) {
-		    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, bais);
-		    }
+		    File[] asFiles = cfgFilePathList.stream().map(p->p.toFile()).toArray(File[]::new);
+	    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, asFiles);
 	    }
 	    if(output != null) {
 	    	pipeline.getOutputStage().clear();

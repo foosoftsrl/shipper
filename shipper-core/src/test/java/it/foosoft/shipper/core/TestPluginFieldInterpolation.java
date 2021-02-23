@@ -45,7 +45,7 @@ public class TestPluginFieldInterpolation {
 		EasyMock.expect(manager.findOutputPlugin("out")).andReturn(a).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getOutputStage().size());
 
 		assertEquals("test", simpleOutputImpl.field.evaluate(new EventImpl().withField("field", "value")));
@@ -66,7 +66,7 @@ public class TestPluginFieldInterpolation {
 		EasyMock.expect(manager.findOutputPlugin("out")).andReturn(a).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getOutputStage().size());
 
 		assertEquals("value", simpleOutputImpl.field.evaluate(new EventImpl().withField("field", "value")));
@@ -87,7 +87,7 @@ public class TestPluginFieldInterpolation {
 		EasyMock.expect(manager.findOutputPlugin("out")).andReturn(a).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getOutputStage().size());
 
 		assertEquals("value", simpleOutputImpl.field.evaluate(new EventImpl().withField("field", "value")));
@@ -108,7 +108,7 @@ public class TestPluginFieldInterpolation {
 		EasyMock.expect(manager.findOutputPlugin("out")).andReturn(a).anyTimes();
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getOutputStage().size());
 
 		assertEquals("value", simpleOutputImpl.field.evaluate(new EventImpl().withMetadata("field", "value")));

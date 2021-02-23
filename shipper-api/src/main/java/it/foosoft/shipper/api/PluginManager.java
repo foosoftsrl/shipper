@@ -14,7 +14,7 @@ public interface PluginManager {
 
 	Input.Factory findInputPlugin(String name);
 
-	Filter.Factory findFilterPlugin(String name);
+	FilterPlugin.Factory findFilterPlugin(String name);
 
 	PipelineComponent.Factory findOutputPlugin(String name);
 

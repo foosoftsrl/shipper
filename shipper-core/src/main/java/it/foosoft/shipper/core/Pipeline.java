@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.foosoft.shipper.api.Bag;
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.Output;
 
@@ -76,7 +76,7 @@ public class Pipeline {
 
 	private BagImpl startupConfig = new BagImpl();
 
-	Pipeline(Configuration conf) throws JsonParseException, JsonMappingException, IOException {
+	Pipeline(Configuration conf) {
 		this.configuration = conf;
 		queue = new EventQueue(conf.batchSize);
 		try {
@@ -234,7 +234,7 @@ public class Pipeline {
 	 * @param id
 	 * @return
 	 */
-	public Filter findFilterPluginById(String id) {
+	public FilterPlugin findFilterPluginById(String id) {
 		for(var filter: filterStage) {
 			if(filter instanceof FilterWrapper) {
 				FilterWrapper wrapper = (FilterWrapper)filter;

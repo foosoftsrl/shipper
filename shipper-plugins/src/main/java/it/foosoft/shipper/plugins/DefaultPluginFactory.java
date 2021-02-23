@@ -1,6 +1,6 @@
 package it.foosoft.shipper.plugins;
 
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
@@ -26,7 +26,7 @@ public class DefaultPluginFactory implements PluginManager {
 		throw new RuntimeException("No such input plugin: " + name);
 	}
 	
-	public Filter.Factory findFilterPlugin(String name) {
+	public FilterPlugin.Factory findFilterPlugin(String name) {
 		if (name.equals("mutate")) {
 			return MutateFilter::new;
 		} else if (name.equals("dissect")) {

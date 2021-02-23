@@ -16,12 +16,12 @@ import org.slf4j.Logger;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRefBuilder;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
 
-public class DissectFilter implements Filter {
+public class DissectFilter implements FilterPlugin {
 
 	private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DissectFilter.class);
 	@NotNull

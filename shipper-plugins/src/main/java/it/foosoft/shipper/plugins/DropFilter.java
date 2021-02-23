@@ -1,9 +1,9 @@
 package it.foosoft.shipper.plugins;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 
-public class DropFilter implements Filter {
+public class DropFilter implements FilterPlugin {
 	@Override
 	public boolean process(Event e) {
 		e.cancel();

@@ -1,5 +1,9 @@
 package it.foosoft.shipper.plugins;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,20 +16,20 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
 import it.foosoft.shipper.api.ConfigurationParm;
+import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.FilterPlugin;
 import ua_parser.Client;
 import ua_parser.Parser;
 
-public class UserAgentFilter implements Filter {
+public class UserAgentFilter implements FilterPlugin {
 
 	private static final Logger LOG = LoggerFactory.getLogger(UserAgentFilter.class);
 	@ConfigurationParm(description="name of the field to parse")
 	public String source;
 	
 	@ConfigurationParm(description="path to ua-parser regexes.yaml (see github)")
-	public String regexes;
+	public File regexes;
 
 	@ConfigurationParm
 	public String target;
@@ -44,7 +48,15 @@ public class UserAgentFilter implements Filter {
 	
 	@Override
 	public void start() {
-		uaParser = new Parser();
+		if(regexes == null)
+			uaParser = new Parser();
+		else {
+			try (FileInputStream istr = new FileInputStream(regexes)) {
+				uaParser = new Parser(istr);
+			} catch (IOException e) {
+				throw new IllegalStateException("Invalid regexes file " + regexes.getAbsolutePath());
+			}
+		}
 	}
 
 	@Override

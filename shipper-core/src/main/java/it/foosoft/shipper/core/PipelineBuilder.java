@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -53,7 +54,7 @@ import com.logstash.ConfigParser.Stage_definitionContext;
 
 import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.FieldRefBuilder;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.Output;
@@ -93,40 +94,45 @@ public class PipelineBuilder {
 
 	private PluginManager pluginFactory;
 	private Configuration configuration;
+	private Pipeline pipeline;
+	private File currentFile;
 	
 	public PipelineBuilder(PluginManager pluginFactory, Configuration conf) {
 		this.pluginFactory = pluginFactory;
 		this.configuration = conf;
+		this.pipeline = new Pipeline(conf);
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File f) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File... files) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
-		try (InputStream istr = new FileInputStream(f)) {
-			return parser.doBuild(CharStreams.fromStream(istr));
+		for(File f: files) {
+			try (InputStream istr = new FileInputStream(f)) {
+				parser.parse(CharStreams.fromStream(istr), f);
+			}
 		}
+		return parser.pipeline;
 	}
 	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Objects.requireNonNull(url, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		try (InputStream istr = url.openStream()) {
-			return parser.doBuild(CharStreams.fromStream(istr));
+			parser.parse(CharStreams.fromStream(istr));
 		}
+		return parser.pipeline;
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, InputStream istr) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		Objects.requireNonNull(istr, "Invalid null stream specified");
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, String code) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Objects.requireNonNull(code, "Invalid null reader specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
-		return parser.doBuild(CharStreams.fromStream(istr));
+		parser.parse(CharStreams.fromReader(new StringReader(code)));
+		return parser.pipeline;
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, Reader reader) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		Objects.requireNonNull(reader, "Invalid null reader specified");
-		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
-		return parser.doBuild(CharStreams.fromReader(reader));
+	private void parse(CharStream fromStream) throws JsonParseException, JsonMappingException, IOException {
+		parse(fromStream, null);
 	}
-
-	private Pipeline doBuild(CharStream fromStream) throws JsonParseException, JsonMappingException, IOException {
-		Pipeline pipeline = new Pipeline(configuration);
+	private void parse(CharStream fromStream, File currentFile) throws JsonParseException, JsonMappingException, IOException {
+		this.currentFile = currentFile;
 		ConfigLexer lexer = new ConfigLexer(fromStream);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		ConfigParser p = new ConfigParser(tokens);
@@ -145,7 +151,6 @@ public class PipelineBuilder {
 				throw new IllegalArgumentException("Invalid stage type");				
 			}
 		}
-		return pipeline;
 	}
 
 	/**
@@ -248,7 +253,7 @@ public class PipelineBuilder {
 
 					ConditionalFilter filter = new ConditionalFilter();
 					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
-						ConditionalBlock<Filter> block = new ConditionalBlock<Filter>();
+						ConditionalBlock<Filter> block = new ConditionalBlock<>();
 						Logical_expressionContext exprCtx = condition.logical_expression(blockIdx);
 						block.expr = createLogicalExpression(exprCtx); 
 						block.stage = new Stage<>();
@@ -268,8 +273,8 @@ public class PipelineBuilder {
 			else if(child instanceof Plugin_declarationContext) {
 				var pluginDecl = (Plugin_declarationContext)child;
 				LOG.debug("Filter plugin " + pluginDecl.IDENTIFIER());
-				it.foosoft.shipper.api.Filter.Factory filterPlugin = pluginFactory.findFilterPlugin(pluginDecl.IDENTIFIER().getText());
-				Filter filter = filterPlugin.create();
+				it.foosoft.shipper.api.FilterPlugin.Factory filterPlugin = pluginFactory.findFilterPlugin(pluginDecl.IDENTIFIER().getText());
+				FilterPlugin filter = filterPlugin.create();
 				FilterWrapper wrapper = new FilterWrapper(filter);
 				stage.add(wrapper);
 				parsePluginConfig(wrapper, filter, pluginDecl);
@@ -451,17 +456,30 @@ public class PipelineBuilder {
 			field.set(plugin, s.stream().toArray(String[]::new));
 		} else if(value.hash() != null) {
 			HashContext hashCtx = value.hash();
-			Map<String,String> kv = new HashMap<>();
+			Map<String,Object> kv = new HashMap<>();
 			for(Hash_elementContext elmCtx: hashCtx.hash_element()) {
 				if(elmCtx.STRING() == null) {
 					throw new UnsupportedOperationException("No support for this hash key type... expected a string");
 				}
 				String hashKey = extractStringContent(elmCtx.STRING());
+				TerminalNode id = elmCtx.plugin_attribute_value().IDENTIFIER();
 				TerminalNode valueNode = elmCtx.plugin_attribute_value().STRING();
-				if(valueNode == null) {
+				if(id != null) {
+					String idText = id.getText();
+					if("true".equals(idText)) {
+						kv.put(hashKey, true);
+					} else if("false".equals(idText)) {
+						kv.put(hashKey, false);
+					} else {
+						throw new UnsupportedOperationException("No support for identifier " + id);
+					}
+				}
+				else if(valueNode != null) {
+					// what about integers?
+					kv.put(hashKey, extractStringContent(valueNode));
+				} else {
 					throw new UnsupportedOperationException("No support for this hash value type... supporting a string");
 				}
-				kv.put(hashKey, extractStringContent(valueNode));
 			}
 			field.set(plugin, kv);
 		} else if(value.IDENTIFIER() != null) {
@@ -478,28 +496,46 @@ public class PipelineBuilder {
 		}
 	}
 
-	private void setFieldValueString(Object plugin, Field field, String valueStr)
+	private void setFieldValueString(Object plugin, Field field, String value)
 			throws IllegalAccessException, InvocationTargetException {
 		if(field.getType().isAssignableFrom(String.class)) {
-			field.set(plugin, valueStr);
+			field.set(plugin, value);
 			return;
 		}
 		if(field.getType() == StringProvider.class) {
-			field.set(plugin, new PrintfInterpolator(valueStr));
+			field.set(plugin, new PrintfInterpolator(value));
 			return;
 		}
 		if(field.getType() == String[].class) {
-			field.set(plugin, new String[] {valueStr});
+			field.set(plugin, new String[] {value});
+			return;
+		}
+		if(field.getType() == File.class) {
+			field.set(plugin, makeFileArg(value));
+			return;
+		}
+		if(field.getType() == File[].class) {
+			field.set(plugin, new File[] {makeFileArg(value)});
 			return;
 		}
 		for(Method m: field.getType().getDeclaredMethods()) {
 			if(m.getName().equals("valueOf") && m.getParameterCount() == 1 && m.getParameters()[0].getType() == String.class) {
 				m.setAccessible(true);
-				field.set(plugin, m.invoke(null, valueStr));
+				field.set(plugin, m.invoke(null, value));
 				return;
 			}
 		}
 		throw new IllegalStateException("Don't know how to initialize field " + plugin.getClass() + "." + field.getName() + " with a string");
+	}
+
+	private File makeFileArg(String value) {
+		File f = new File(value);
+		if(!f.isAbsolute()) {
+			if(currentFile == null)
+				throw new IllegalStateException("Can't resolve relative paths, as configuration is not being read from a file");
+			f = new File(currentFile.getAbsoluteFile().getParent(), value);
+		}
+		return f;
 	}
 
 	private static String extractStringContent(TerminalNode valueNode) {

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
 
 public class ConditionalFilter implements Filter {
 	
@@ -18,19 +17,18 @@ public class ConditionalFilter implements Filter {
 	List<ConditionalBlock<Filter>> blocks = new ArrayList<>();
 	Stage<Filter> elseStage;
 
-	// Don't know if I should return true or false, or whatever...
 	@Override
-	public boolean process(Event e) {
+	public void process(Event e) {
 		if(e.canceled())
-			return true;
+			return;
 		for(ConditionalBlock<Filter> block: blocks) {
 			if(block.expr.evaluate(e)) {
 				for(var a : block.stage) {
 					a.process(e);
 					if(e.canceled())
-						return true;
+						return;
 				}
-				return true;
+				return;
 			}
 		}
 		if(elseStage != null) {
@@ -38,7 +36,7 @@ public class ConditionalFilter implements Filter {
 				filter.process(e);
 			}
 		}
-		return true;
+		return;
 	}
 
 	@Override

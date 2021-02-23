@@ -9,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.ConfigurationParm;
 
-public class UrlDecodeFilter implements Filter {
+public class UrlDecodeFilter implements FilterPlugin {
 	private static final Logger LOG = LoggerFactory.getLogger(UrlDecodeFilter.class);
 	
 	@NotNull

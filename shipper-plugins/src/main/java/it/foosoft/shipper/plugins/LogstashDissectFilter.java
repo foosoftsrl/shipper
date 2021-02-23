@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRefBuilder;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
@@ -27,7 +27,7 @@ import it.foosoft.shipper.plugins.converters.Converters;
  * @author luca
  *
  */
-public class LogstashDissectFilter implements Filter {
+public class LogstashDissectFilter implements FilterPlugin {
 
 	private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(LogstashDissectFilter.class);
 	
@@ -65,8 +65,10 @@ public class LogstashDissectFilter implements Filter {
 			String attrString = (String)attr;
 			Dissector context = pattern.getValue();
 			DissectResult result = context.dissect(attrString.getBytes(), e);
-			if(!result.matched())
+			if(!result.matched()) {
+				e.addTags(tag_on_failure);
 				return false;
+			}
 			for(var converter: converters) {
 				converter.process(e);
 			}

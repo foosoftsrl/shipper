@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FieldRefBuilder;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
@@ -20,7 +20,7 @@ public class TestInjection {
 
 	PluginManager manager = EasyMock.createMock(PluginManager.class);
 
-	class InjectableFilter implements Filter {
+	class InjectableFilter implements FilterPlugin {
 		@Inject
 		FieldRefBuilder fieldRefBuilder;
 		
@@ -50,7 +50,7 @@ public class TestInjection {
 		EasyMock.expect(manager.findFilterPlugin("inject")).andReturn(()->injectableFilter);
 		EasyMock.replay(manager);
 
-		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, new StringReader(pipelineDef));
+		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
 
 		Event evt;

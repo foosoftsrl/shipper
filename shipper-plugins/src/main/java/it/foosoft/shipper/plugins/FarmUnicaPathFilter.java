@@ -3,10 +3,10 @@ package it.foosoft.shipper.plugins;
 import java.util.regex.Pattern;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.api.Filter;
+import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.ConfigurationParm;
 
-public class FarmUnicaPathFilter implements Filter {
+public class FarmUnicaPathFilter implements FilterPlugin {
 	@ConfigurationParm
 	public String source;
 	
