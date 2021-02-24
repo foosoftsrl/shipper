@@ -70,12 +70,13 @@ public class FilterWrapper implements Filter {
 	}
 
 	@Override
-	public void process(Event e) {
+	public Result process(Event e) {
 		if(inner.process(e)) {
 			for(var processor: eventProcessors) {
 				processor.process(e);
 			}
 		}
+		return Result.CONTINUE;
 	}
 
 	public String getId() {

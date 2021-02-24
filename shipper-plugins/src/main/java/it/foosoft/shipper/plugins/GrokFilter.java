@@ -72,7 +72,9 @@ public class GrokFilter implements FilterPlugin {
 		groks = new HashMap<>();
 		for(File pattern_dir: patterns_dir) {
 			pattern_dir.listFiles((dir,fileName)->{
-				try(FileReader reader = new FileReader(new File(dir, fileName))) {
+				File patternFile = new File(dir, fileName);
+				LOG.info("Parsing grok file {}", patternFile);
+				try(FileReader reader = new FileReader(patternFile)) {
 					compiler.register(reader);
 				} catch (IOException e) {
 					LOG.warn("Failed reading pattern {}: {}", fileName, e.getMessage());

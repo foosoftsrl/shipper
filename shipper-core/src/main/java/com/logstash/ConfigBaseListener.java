@@ -54,6 +54,18 @@ public class ConfigBaseListener implements ConfigListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExit_statement(ConfigParser.Exit_statementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExit_statement(ConfigParser.Exit_statementContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterPlugin_declaration(ConfigParser.Plugin_declarationContext ctx) { }
 	/**
 	 * {@inheritDoc}

@@ -18,17 +18,16 @@ public class ConditionalFilter implements Filter {
 	Stage<Filter> elseStage;
 
 	@Override
-	public void process(Event e) {
+	public Result process(Event e) {
 		if(e.canceled())
-			return;
+			return Result.BREAK;
 		for(ConditionalBlock<Filter> block: blocks) {
 			if(block.expr.evaluate(e)) {
 				for(var a : block.stage) {
-					a.process(e);
-					if(e.canceled())
-						return;
+					if(Result.BREAK == a.process(e) || e.canceled())
+						return Result.BREAK;
 				}
-				return;
+				return Result.CONTINUE;
 			}
 		}
 		if(elseStage != null) {
@@ -36,7 +35,7 @@ public class ConditionalFilter implements Filter {
 				filter.process(e);
 			}
 		}
-		return;
+		return Result.CONTINUE;
 	}
 
 	@Override

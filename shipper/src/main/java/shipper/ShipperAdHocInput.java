@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,15 +28,19 @@ public class ShipperAdHocInput implements Input {
 
 	private Runnable onEnd;
 
+	private Map<String, String> fields;
+
 	public ShipperAdHocInput(InputContext ctx, String path) {
-		this(ctx, path, null);
+		this(ctx, path, Collections.emptyMap(), null);
 	}
 
-	public ShipperAdHocInput(InputContext ctx, String path, Runnable onEnd) {
+	public ShipperAdHocInput(InputContext ctx, String path, Map<String, String> fields, Runnable onEnd) {
 		this.ctx = ctx;
+		this.fields = fields;
 		this.path = path;
 		this.onEnd = onEnd;
 	}
+
 
 	@Override
 	public void start() {
@@ -60,6 +66,9 @@ public class ShipperAdHocInput implements Input {
 				while((line = reader.readLine()) != null) {
 					Event evt = ctx.createEvent();
 					evt.setField("message", line);
+					for(var entry: fields.entrySet()) {
+						evt.setField(entry.getKey(), entry.getValue());
+					}
 					ctx.processEvent(evt);
 				}
 			}

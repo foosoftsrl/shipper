@@ -1,12 +1,11 @@
 package shipper;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -54,6 +53,9 @@ public class Shipper implements Callable<Integer> {
     @Option(names = {"--input-tag"}, description = "Tag added when using file input")
     private String inputTag = null;
 
+    @Option(names = {"--input-field"}, description = "field added when using file input (key=value)")
+    private String inputField = null;
+
     public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
         int exitCode = new CommandLine(new Shipper()).execute(args);
         System.exit(exitCode);
@@ -94,7 +96,6 @@ public class Shipper implements Callable<Integer> {
 		    }
 		    PipelineCfg pipelineCfg = pipelines[0];
 
-		    byte[] buf;
 	    	Path globPattern = pipelinesFile.getParentFile().toPath().resolve(pipelineCfg.path);
 	    	String globPatternStr = globPattern.toString().replace("\\", "/");
 	    	LOG.info("Looking for configuration file with glob pattern {}", globPatternStr);
@@ -120,8 +121,13 @@ public class Shipper implements Callable<Integer> {
 
 	    if(input != null) {
 	    	pipeline.getInputs().clear();
+	    	Map<String,String> fields = new HashMap<>();
+	    	if(inputField != null) {
+	    		String[] split = inputField.split("=");
+	    		fields.put(split[0], split[1]);
+	    	}
 	    	pipeline.addInput(ctx->{
-	    		return new ShipperAdHocInput(ctx, input, ()->{
+	    		return new ShipperAdHocInput(ctx, input, fields, ()->{
             		stopRequest.set(true);
 	    		});
 	    	}, unused->{});

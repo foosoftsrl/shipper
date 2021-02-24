@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.logstash.ConfigLexer;
 import com.logstash.ConfigParser;
 import com.logstash.ConfigParser.Compare_expressionContext;
+import com.logstash.ConfigParser.Exit_statementContext;
 import com.logstash.ConfigParser.Fieldref_elementContext;
 import com.logstash.ConfigParser.HashContext;
 import com.logstash.ConfigParser.Hash_elementContext;
@@ -135,15 +136,17 @@ public class PipelineBuilder {
 		ConfigLexer lexer = new ConfigLexer(fromStream);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		ConfigParser p = new ConfigParser(tokens);
-		for (Stage_declarationContext stage : p.config().stage_declaration()) {
-			Stage_definitionContext definition = stage.stage_definition();
-			if(stage.INPUT() != null) {
+		for (Stage_declarationContext stageDeclCtx : p.config().stage_declaration()) {
+			Stage_definitionContext definition = stageDeclCtx.stage_definition();
+			if(stageDeclCtx.INPUT() != null) {
 				parseInputStageDefinition(pipeline, definition);
 			} 
-			else if(stage.FILTER() != null) {
-				parseFilteringStage(pipeline.getFilteringStage(), definition);
+			else if(stageDeclCtx.FILTER() != null) {
+				FilteringStage stage = new FilteringStage();
+				parseFilteringStage(stage, definition);
+				pipeline.getFilteringStage().add(stage);
 			}
-			else if(stage.OUTPUT() != null) {
+			else if(stageDeclCtx.OUTPUT() != null) {
 				parseOutputStageDefinition(pipeline.getOutputStage(), definition);
 			}
 			else {
@@ -277,6 +280,8 @@ public class PipelineBuilder {
 				FilterWrapper wrapper = new FilterWrapper(filter);
 				stage.add(wrapper);
 				parsePluginConfig(wrapper, filter, pluginDecl);
+			} else if(child instanceof Exit_statementContext) {
+				stage.add(new ExitStatement());
 			}
 		}
 	}
@@ -325,6 +330,8 @@ public class PipelineBuilder {
 			Compare_expressionContext compare = (Compare_expressionContext)rule;
 			if(compare.EQ() != null) {
 				return new EqualsExpression(makeRValue(compare.rvalue(0)), makeRValue(compare.rvalue(1)));
+			} else if(compare.NEQ() != null) {
+				return new NotEqualsExpression(makeRValue(compare.rvalue(0)), makeRValue(compare.rvalue(1)));
 			}
 			throw new UnsupportedOperationException("Comparator not supported");
 		} 

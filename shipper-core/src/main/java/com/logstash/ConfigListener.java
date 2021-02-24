@@ -40,6 +40,16 @@ public interface ConfigListener extends ParseTreeListener {
 	 */
 	void exitStage_definition(ConfigParser.Stage_definitionContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link ConfigParser#exit_statement}.
+	 * @param ctx the parse tree
+	 */
+	void enterExit_statement(ConfigParser.Exit_statementContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ConfigParser#exit_statement}.
+	 * @param ctx the parse tree
+	 */
+	void exitExit_statement(ConfigParser.Exit_statementContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link ConfigParser#plugin_declaration}.
 	 * @param ctx the parse tree
 	 */

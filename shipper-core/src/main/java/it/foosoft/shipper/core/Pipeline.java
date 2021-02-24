@@ -177,6 +177,7 @@ public class Pipeline {
 					if(!evt.canceled()) {
 						for(var filter: filterStage) {
 							try {
+								// We're on main stage, the result *must* be ignored
 								filter.process(evt);
 							} catch(Exception e) {
 								LOG.error("Canceling event due to processing failure. Probably, a filter misbehaving", e);

@@ -81,7 +81,8 @@ COMMENT : HASH .+? (NL|EOF) -> skip ;
 /* Grammar rules */
 config : stage_declaration+ EOF ;
 stage_declaration : ( INPUT | FILTER | OUTPUT ) stage_definition ;
-stage_definition : LBRACE (plugin_declaration | stage_condition)* RBRACE ;
+stage_definition : LBRACE (plugin_declaration | stage_condition | exit_statement)* RBRACE ;
+exit_statement: 'exit';
 plugin_declaration : IDENTIFIER plugin_definition ;
 plugin_definition : LBRACE plugin_attribute* RBRACE ;
 plugin_attribute : IDENTIFIER HASHROCKET plugin_attribute_value ;

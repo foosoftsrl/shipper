@@ -20,6 +20,7 @@ import com.logstash.ConfigParser.ArrayContext;
 import com.logstash.ConfigParser.Array_elementContext;
 import com.logstash.ConfigParser.Compare_expressionContext;
 import com.logstash.ConfigParser.ConfigContext;
+import com.logstash.ConfigParser.Exit_statementContext;
 import com.logstash.ConfigParser.FieldrefContext;
 import com.logstash.ConfigParser.Fieldref_elementContext;
 import com.logstash.ConfigParser.HashContext;
@@ -321,6 +322,16 @@ public class TestPipelineParsing {
 			public void exitHash_element(Hash_elementContext ctx) {
 								System.err.println("exitHash_element");
 				
+			}
+
+			@Override
+			public void enterExit_statement(Exit_statementContext ctx) {
+				System.err.println("enterExit_statement");
+			}
+
+			@Override
+			public void exitExit_statement(Exit_statementContext ctx) {
+				System.err.println("exitExit_statement");
 			}
 			
 		}, p.config());
