@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
-import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.plugins.converters.Converters;
 import it.foosoft.shipper.plugins.mutate.CopyField;
 import it.foosoft.shipper.plugins.mutate.RenameField;
@@ -39,8 +39,8 @@ public class MutateFilter implements FilterPlugin {
 	@ConfigurationParm
 	public Map<String,String> convert = new HashMap<>();
 
-	//@Param
-	//public String[] gsub = new String[0];
+	@ConfigurationParm
+	public String[] gsub = new String[0];
 
 	//@Param
 	//public String[] uppercase = new String[0];
@@ -100,16 +100,20 @@ public class MutateFilter implements FilterPlugin {
 			eventProcessors.add(Converters.createConverter(fieldRefBuilder.createFieldRef(fieldName), targetFormat));
 		}
 		
+		if(gsub.length % 3 != 0) {
+			throw new IllegalStateException("gsub array length must be multiple of 3");
+		}
+
+		for(int i = 0; i < gsub.length; i+= 3) {
+			FieldRef fieldRef = fieldRefBuilder.createFieldRef(gsub[i]);
+			eventProcessors.add(new GSub(fieldRef, gsub[i + 1], gsub[i + 2]));
+		}
+
 		for(var copyEntry: copy.entrySet()) {
 			FieldRef sourceField = fieldRefBuilder.createFieldRef(copyEntry.getKey());
 			FieldRef targetField = fieldRefBuilder.createFieldRef(copyEntry.getValue());
 			eventProcessors.add(new CopyField(sourceField, targetField));
 		}
-/*		
-		for(var s: gsub) {
-			throw new UnsupportedOperationException("No gsub support");
-		}
-*/
 	}
 
 	@Override

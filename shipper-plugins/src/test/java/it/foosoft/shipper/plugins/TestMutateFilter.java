@@ -114,4 +114,26 @@ public class TestMutateFilter {
 		assertTrue(e.getField("tost") instanceof Map);
 		assertEquals(10, ((Map)e.getField("tost")).get("test"));
 	}
+
+	@Test
+	public void testGsub() {
+		Event e = new EventImpl();
+		e.setField("test", "test");
+		MutateFilter m = createMutateFilter();
+		m.gsub = new String[] {"test", "e", "o"};
+		m.start();
+		m.process(e);
+		assertEquals("tost", e.getField("test"));
+	}
+
+	@Test
+	public void testGsub2() {
+		Event e = new EventImpl();
+		e.setField("test", "17/Feb/2019:05:45:22.630+000");
+		MutateFilter m = createMutateFilter();
+		m.gsub = new String[] {"test", "\\+000$", "+0000"};
+		m.start();
+		m.process(e);
+		assertEquals("17/Feb/2019:05:45:22.630+0000", e.getField("test"));
+	}
 }

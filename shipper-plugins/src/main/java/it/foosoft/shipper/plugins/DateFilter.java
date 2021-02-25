@@ -3,6 +3,7 @@ package it.foosoft.shipper.plugins;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import javax.validation.constraints.NotNull;
 
@@ -53,7 +54,16 @@ public class DateFilter implements FilterPlugin {
 		}
 		fieldName = match[0];
 		Locale selectedLocale = getLocaleFromString(locale);
-		dateParser = ThreadLocal.withInitial(() -> new SimpleDateFormat(match[1], selectedLocale));		
+		if(selectedLocale != Locale.US) {
+			LOG.info("A non-US locale has been specified. The fallback mechanism to US is not implemented");
+		}
+		dateParser = ThreadLocal.withInitial(() -> {
+			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(match[1], selectedLocale);
+			if(this.timezone != null) {
+				simpleDateFormat.setTimeZone(TimeZone.getTimeZone(this.timezone));
+			}
+			return simpleDateFormat;
+		});		
 	}
 	@Override
 	public void stop() {
