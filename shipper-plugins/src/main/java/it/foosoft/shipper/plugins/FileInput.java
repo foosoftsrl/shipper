@@ -7,14 +7,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -27,11 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.Bag;
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FileWalker;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.InputContext;
-import it.foosoft.shipper.api.ConfigurationParm;
 
 public class FileInput implements Input {
 	private static final Logger LOG = LoggerFactory.getLogger(FileInput.class);
@@ -80,7 +80,7 @@ public class FileInput implements Input {
 	private Set<Path> lastScan = new HashSet<>();
 
 	// The files queued for download
-	private LinkedBlockingQueue<Entry> taskQueue = new LinkedBlockingQueue<>();
+	private PriorityBlockingQueue<Entry> taskQueue = new PriorityBlockingQueue<>(1, FileInput::compareLastModified);
 
 	// executor which discovers new files
 	private ScheduledExecutorService scanExecutor;
@@ -308,7 +308,6 @@ public class FileInput implements Input {
 					entries.add(new Entry(path, lastModifiedTime));
 		    	}
 		    }
-		    entries.sort(FileInput::compareLastModified);
 		    updateTaskList(entries);
 		} catch(Exception e) {
 			e.printStackTrace();
