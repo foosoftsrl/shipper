@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
@@ -70,6 +71,9 @@ public class FileInput implements Input {
 	@ConfigurationParm
 	int discover_interval = 15;
 
+	@ConfigurationParm
+	int randomWindow = 0;
+
 	private InputContext ctx;
 
 	// the result of the last scan
@@ -84,16 +88,16 @@ public class FileInput implements Input {
 	List<Worker> workers = new ArrayList<>();
 	
 	private static class Entry {
-		public static Entry STOP = new Entry(null, null);
+		public static Entry STOP = new Entry(null, 0);
 		final Path path;
-		final FileTime lastModified;
+		final long lastModified;
 		final int startOffset;
-		Entry(Path file, FileTime fileTime) {
-			this(file, fileTime, 0);
+		Entry(Path file, long lastModified) {
+			this(file, lastModified, 0);
 		}
-		Entry(Path file, FileTime fileTime, int startOffset) {
+		Entry(Path file, long lastModified, int startOffset) {
 			this.path = file;
-			this.lastModified = fileTime;
+			this.lastModified = lastModified;
 			this.startOffset = startOffset;
 		}
 	}
@@ -200,16 +204,21 @@ public class FileInput implements Input {
 		if(pos < 0) {
 			throw new IllegalArgumentException("the path parameter should have a wildcard, or something like that");
 		}
-		Bag bag = ctx.getStartStatus();
-		if(bag != null) {
-			Bag progressBag = bag.getBagProperty("progress");
-			if(progressBag != null) {
-				for(String fileName:progressBag.getPropertyNames()) {
-					Long l = progressBag.getNumericProperty(fileName);
-					if(l != null) {
-						Entry entry = new Entry(Path.of(fileName), null, l.intValue());
-						taskQueue.add(entry);
+		Bag startStartus = ctx.getStartStatus();
+		if(startStartus != null) {
+			Bag progress = startStartus.getBagProperty("progress");
+			if(progress != null) {
+				for(String pathStr: progress.getPropertyNames()) {
+					Long idx = progress.getNumericProperty(pathStr);
+					if(idx != null) {
+						Path path = Path.of(pathStr);
+						// We put an entry both in lastScan, to avoid an entry to be recreated
+						// and in the taskQueue, in order to have the entry executed
+						// as soon as the workers start
+						Entry entry = new Entry(path, 0, idx.intValue());
 						lastScan.add(entry.path);
+						taskQueue.add(entry);
+						LOG.info("Restarting {} @ {}", entry.path, idx);
 					}
 				}
 			}
@@ -217,30 +226,6 @@ public class FileInput implements Input {
 
 		scanExecutor = Executors.newScheduledThreadPool(1);
 		scanExecutor.scheduleWithFixedDelay(this::scan, 0, discover_interval * 500, TimeUnit.MILLISECONDS);
-		
-		Bag startStartus = ctx.getStartStatus();
-		if(startStartus != null) {
-			Bag progress = bag.getBagProperty("progress");
-			if(progress != null) {
-				for(String pathStr: progress.getPropertyNames()) {
-					Long idx = progress.getNumericProperty(pathStr);
-					if(idx != null) {
-						Path path = Path.of(pathStr);
-						try {
-							// We put an entry both in lastScan, to avoid an entry to be recreated
-							// and in the taskQueue, in order to have the entry executed
-							// as soon as the workers start
-							Entry entry = new Entry(path, Files.getLastModifiedTime(path), idx.intValue());
-							lastScan.add(entry.path);
-							taskQueue.add(entry);
-							LOG.info("Restarting {} @ {}", entry.path, idx);
-						} catch (IOException e) {
-							LOG.warn("Unprocessable restart entry: {}", path, e);
-						}
-					}
-				}
-			}
-		}
 		
 		for(int i = 0; i < threads; i++) {
 			workers.add(new Worker());
@@ -317,7 +302,10 @@ public class FileInput implements Input {
 		    for(Path path: FileWalker.walk(this.path)) {
 		    	// Should I log anything if this is not a regular file? it may really be annoying
 		    	if(Files.isRegularFile(path)) {
-			    	entries.add(new Entry(path, Files.getLastModifiedTime(path)));
+			    	long lastModifiedTime = Files.getLastModifiedTime(path).toMillis();
+			    	if(randomWindow > 0)
+			    		lastModifiedTime += ThreadLocalRandom.current().nextLong(randomWindow * 1000l);
+					entries.add(new Entry(path, lastModifiedTime));
 		    	}
 		    }
 		    entries.sort(FileInput::compareLastModified);
@@ -340,7 +328,7 @@ public class FileInput implements Input {
 	}
 
 	private static int compareLastModified(Entry left, Entry right) {
-		return left.lastModified.compareTo(right.lastModified);
+		return Long.compare(left.lastModified, right.lastModified);
 	}
 	
 	// Test method...
