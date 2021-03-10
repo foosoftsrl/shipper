@@ -14,7 +14,9 @@ This project is and will always be open source: we release it in the public doma
 
 ## Performance
 
-We were able to saturate a 7 (speedy) nodes cluster with a single instance of shipper running on a 24 core VM at 50% CPU occupation. Speed gain is around one order of magnitude.
+We were able to saturate a 7 (speedy) nodes cluster with a single instance of shipper running on a 24 core VM at 50% CPU occupation. Speed gain is around one order of magnitude (probably a bit less)
+
+We're reaching "easily" 150k logging events/sec (on a not-so-trivial http server log analysis system), a number which would have probably required to re-architect the system with load balancers and so on, had we used logstash
 
 ## Weak points
 
@@ -37,12 +39,12 @@ A (versionless) RPM can be built with
 ``` 
 gradle :shipper:rpm
 ```
+
 # Configuration
 
 The configuration is quite similar to logstash one.
 
 The "entry point" for configuration, at least for the SystemD service, is a file similar to logstash's pipelines.yml 
-
 
 ``` 
 - pipeline.id: cdn
@@ -50,7 +52,9 @@ The "entry point" for configuration, at least for the SystemD service, is a file
   path.config: "conf.d/{00-input.conf,10-filter.conf,20-output.conf}"
 ``` 
 
-Apart quirks / incomplete code / missing plugins the actual pipeline files follow the same syntax and semantic of logstash configuration files
+Apart quirks / incomplete code / missing plugins the actual pipeline files should follow the same syntax and semantic of logstash configuration files
+
+There are and there will be extensions to the syntax of logstash pipeline configuration files, which in our humble opinion is not expressive enough
 
 # Running
 
