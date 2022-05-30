@@ -8,28 +8,26 @@ import javax.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FilterPlugin;
-import it.foosoft.shipper.api.ConfigurationParm;
 
 public class UrlDecodeFilter implements FilterPlugin {
 	private static final Logger LOG = LoggerFactory.getLogger(UrlDecodeFilter.class);
 	
 	@NotNull
 	@ConfigurationParm(description="The field to decode")
-	String field;
-	
-	URLDecoder urlDecoder = new URLDecoder();
+	String fieldName;
 	
 	@Override
 	public boolean process(Event e) {
-		String s = e.getFieldAsString(field);
+		String s = e.getFieldAsString(fieldName);
 		if(s == null) {
-			LOG.warn("Field {} is not a string");
+			LOG.warn("Field {} is not a string", fieldName);
 			return false;
 		}
 		// don't know what charset to use
-		e.setField(field, urlDecoder.decode(s, StandardCharsets.UTF_8));
+		e.setField(fieldName, URLDecoder.decode(s, StandardCharsets.UTF_8));
 		return true;
 	}
 

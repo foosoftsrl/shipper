@@ -8,6 +8,8 @@ repositories {
     jcenter()
 }
 
+version = 0.2
+
 // I prefer unit tests with files on side
 sourceSets.test.resources.srcDir (['src/test/java','src/test/resources'])
 
@@ -21,6 +23,7 @@ task fatJar(type: Jar, dependsOn: 'jar') {
     manifest {
         attributes 'Main-Class': 'shipper.Shipper'
     }
+    duplicatesStrategy = 'include'
     baseName = 'shipper-fat'
     from { 
       configurations.runtimeClasspath.collect { 
@@ -34,6 +37,7 @@ task fatJar(type: Jar, dependsOn: 'jar') {
         "build/resources/main/"
     }
 }
+
 
 task rpm(type: Rpm, dependsOn: 'fatJar') {
     release '1'

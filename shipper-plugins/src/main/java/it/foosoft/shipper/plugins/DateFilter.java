@@ -1,9 +1,15 @@
 package it.foosoft.shipper.plugins;
 
-import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 
 import javax.validation.constraints.NotNull;
 
@@ -28,7 +34,11 @@ public class DateFilter implements FilterPlugin {
 
 	private String fieldName;
 
-	ThreadLocal<SimpleDateFormat> dateParser;	
+	public interface DateParser {
+		public Date parse(String text) throws ParseException;
+	}
+
+	DateParser dateParser;	
 
 	@Override
 	public boolean process(Event evt) {
@@ -38,10 +48,10 @@ public class DateFilter implements FilterPlugin {
 		}
 		String dateAsText = (String)obj;
 		try {
-			Date d = dateParser.get().parse(dateAsText);
+			Date d = dateParser.parse(dateAsText);
 			evt.setTimestamp(d);
 		} catch (Exception e) {
-			LOG.info("Failed parsing date {}", dateAsText);
+			LOG.error("Failed parsing date {}", dateAsText, e);
 			return false;
 		}
 		return true;
@@ -57,13 +67,38 @@ public class DateFilter implements FilterPlugin {
 		if(selectedLocale != Locale.US) {
 			LOG.info("A non-US locale has been specified. The fallback mechanism to US is not implemented");
 		}
-		dateParser = ThreadLocal.withInitial(() -> {
-			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(match[1], selectedLocale);
-			if(this.timezone != null) {
-				simpleDateFormat.setTimeZone(TimeZone.getTimeZone(this.timezone));
-			}
-			return simpleDateFormat;
-		});		
+		if("UNIX".equals(match[1])) {
+			dateParser = this::extracted;
+		} else if("UNIX_MS".equals(match[1])) {
+			dateParser = str->new Date(Long.parseLong(str));
+		} else if("".equals(match[1])) {
+			dateParser = str->new Date(Long.parseLong(str));
+		} else {
+			DateTimeFormatter parser = createParser(selectedLocale);
+			dateParser = str->{
+				// Parse date, do not care about stray data at end.
+				// I'm afraid that this is a very bad idea, but there's a unit test
+				// I made ages ago... and... I don't want to think about it right now
+		        TemporalAccessor accessor = parser.parse(str, new ParsePosition(0));
+		        return Date.from(accessor.query(ZonedDateTime::from).toInstant());
+			};
+		}
+	}
+
+	private Date extracted(String str) {
+		return new Date((long)(Double.parseDouble(str) * 1000l));
+	}
+
+	private DateTimeFormatter createParser(Locale selectedLocale) {
+		DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder();
+		DateTimeFormatter parse = builder
+			.parseCaseInsensitive()
+			.appendPattern(match[1])
+			.toFormatter(selectedLocale);
+		if(this.timezone != null) {
+			parse = parse.withZone(ZoneId.of(this.timezone));
+		}
+		return parse;
 	}
 	@Override
 	public void stop() {
