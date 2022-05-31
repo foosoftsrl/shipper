@@ -15,9 +15,9 @@ import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
 
-public class TestDissectFilter {
+class TestDissectFilter {
 	@Test
-	public void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/dissect.conf"));
 		DissectFilter filter = (DissectFilter)pipeline.findFilterPluginById("dissect");
 		filter.start();
@@ -32,7 +32,7 @@ public class TestDissectFilter {
 	}
 
 	@Test
-	public void testSplitWithSlashes() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testSplitWithSlashes() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		DissectFilter filter = new DissectFilter();
 		filter.mapping = Map.of("message", "/farmunica/%{?year}/%{?month}/%{cmsId}_%{jobId}/%{assetpath}");
 		filter.start();
@@ -47,7 +47,7 @@ public class TestDissectFilter {
 	}
 
 	@Test
-	public void testPatternDoesNotEndWithField() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testPatternDoesNotEndWithField() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		DissectFilter filter = new DissectFilter();
 		filter.mapping = Map.of("message", "/farmunica/%{?year}/%{?month}/%{cmsId}_%{jobId}/%{assetpath}#");
 		filter.start();

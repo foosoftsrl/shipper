@@ -8,7 +8,8 @@ repositories {
     jcenter()
 }
 
-version = 0.2
+// won't set version, because systemd script expects vanilla shipper-fat.jar
+def RPM_VERSION=0.2.1
 
 // I prefer unit tests with files on side
 sourceSets.test.resources.srcDir (['src/test/java','src/test/resources'])
@@ -40,6 +41,7 @@ task fatJar(type: Jar, dependsOn: 'jar') {
 
 
 task rpm(type: Rpm, dependsOn: 'fatJar') {
+    version = RPM_VERSION
     release '1'
     os = LINUX
     type = BINARY

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.core.rvalue.MetadataRefRvalue;
+import it.foosoft.shipper.core.rvalue.TimestampRvalue;
 
 public class FieldRefBuilderImpl implements FieldRefBuilder {
 
@@ -19,6 +20,9 @@ public class FieldRefBuilderImpl implements FieldRefBuilder {
 		}
 		if("@metadata".equals(fields[0])) {
 			return new MetadataRefRvalue(Arrays.asList(fields).subList(1, fields.length));
+		}
+		if("@timestamp".equals(fields[0])) {
+			return new TimestampRvalue();
 		}
 		return new FieldRefImpl(expr);
 	}

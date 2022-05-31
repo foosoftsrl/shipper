@@ -236,8 +236,17 @@ public class Pipeline {
 	 * @return
 	 */
 	public FilterPlugin findFilterPluginById(String id) {
+		return findFilterInStageById(filterStage, id);
+	}
+
+	private FilterPlugin findFilterInStageById(Stage filterStage, String id) {
 		for(var filter: filterStage) {
-			if(filter instanceof FilterWrapper) {
+			if(filter instanceof Stage) {
+				FilterPlugin plugin = findFilterInStageById((Stage)filter, id);
+				if(plugin != null)
+					return plugin;
+			}
+			else if(filter instanceof FilterWrapper) {
 				FilterWrapper wrapper = (FilterWrapper)filter;
 				if(wrapper.getId().equals(id))
 					return wrapper.getInner();

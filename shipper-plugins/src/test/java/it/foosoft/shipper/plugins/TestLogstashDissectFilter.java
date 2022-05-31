@@ -15,9 +15,9 @@ import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
 
-public class TestLogstashDissectFilter {
+class TestLogstashDissectFilter {
 	@Test
-	public void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/dissect_logstash.conf"));
 		LogstashDissectFilter filter = (LogstashDissectFilter)pipeline.findFilterPluginById("dissect");
 		filter.start();
@@ -32,7 +32,7 @@ public class TestLogstashDissectFilter {
 	}
 
 	@Test
-	public void testSplitWithSlashes() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testSplitWithSlashes() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		LogstashDissectFilter filter = new LogstashDissectFilter();
 		filter.mapping = Map.of("message", "/farmunica/%{?year}/%{?month}/%{cmsId}_%{jobId}/%{assetpath}");
 		filter.start();
@@ -47,7 +47,7 @@ public class TestLogstashDissectFilter {
 	}
 
 	@Test
-	public void testPatternDoesNotEndWithField() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testPatternDoesNotEndWithField() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		LogstashDissectFilter filter = new LogstashDissectFilter();
 		filter.mapping = Map.of("message", "/farmunica/%{?year}/%{?month}/%{cmsId}_%{jobId}/%{assetpath}#");
 		filter.start();
@@ -62,7 +62,7 @@ public class TestLogstashDissectFilter {
 	}
 	
 	@Test
-	public void testNested() {
+	void testNested() {
 		LogstashDissectFilter filter = new LogstashDissectFilter();
 		filter.mapping.put("message",
 		"%{timeStamp}\t%{+timeStamp}\t%{ip}\t%{method}\t%{path}\t%{response}\t%{bytesSent}\t%{responseTime}\t\"%{referer}\"\t\"%{userAgentLog}\"\t%{?cookie}\t%{?custom}\t%{ghostIp}\t%{?cacheStatus}\t\"%{host}\""				

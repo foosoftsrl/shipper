@@ -6,7 +6,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 import java.util.Locale;
@@ -18,7 +17,10 @@ import org.slf4j.LoggerFactory;
 
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
+import it.foosoft.shipper.api.FieldRef;
+import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.FilterPlugin;
+import it.foosoft.shipper.api.Inject;
 
 public class DateFilter implements FilterPlugin {
 	private static final Logger LOG = LoggerFactory.getLogger(DateFilter.class);
@@ -28,17 +30,39 @@ public class DateFilter implements FilterPlugin {
 	@ConfigurationParm
 	public String timezone;
 
+	@ConfigurationParm
+	public String target = "@timestamp";
+
 	@NotNull
 	@ConfigurationParm
 	public String[] match;
 
+	@Inject
+	public FieldRefBuilder fieldRefBuilder;
+
 	private String fieldName;
+
 
 	public interface DateParser {
 		public Date parse(String text) throws ParseException;
 	}
 
-	DateParser dateParser;	
+	// mutable data
+	private FieldRef targetField;	
+
+	private DateParser dateParser;
+
+	public DateFilter() {
+		
+	}
+
+	/**
+	 * 	Commodity constructor for unit tests
+	 * @param fieldRefBuilder
+	 */
+	public DateFilter(FieldRefBuilder fieldRefBuilder) {
+		this.fieldRefBuilder = fieldRefBuilder;
+	}
 
 	@Override
 	public boolean process(Event evt) {
@@ -48,8 +72,7 @@ public class DateFilter implements FilterPlugin {
 		}
 		String dateAsText = (String)obj;
 		try {
-			Date d = dateParser.parse(dateAsText);
-			evt.setTimestamp(d);
+			targetField.set(evt, dateParser.parse(dateAsText));
 		} catch (Exception e) {
 			LOG.error("Failed parsing date {}", dateAsText, e);
 			return false;
@@ -59,6 +82,8 @@ public class DateFilter implements FilterPlugin {
 
 	@Override
 	public void start() {
+		targetField = fieldRefBuilder.createFieldRef(target);
+		
 		if(match.length != 2) {
 			throw new IllegalArgumentException("DateFilter.match currently supports only 2 arguments");
 		}
