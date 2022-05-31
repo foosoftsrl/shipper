@@ -30,8 +30,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.logstash.ConfigLexer;
 import com.logstash.ConfigParser;
 import com.logstash.ConfigParser.Compare_expressionContext;
@@ -96,43 +94,52 @@ public class PipelineBuilder {
 	private Configuration configuration;
 	private Pipeline pipeline;
 	private File currentFile;
+	private String currentSource = ""; // either a URL or File
 	
-	public PipelineBuilder(PluginManager pluginFactory, Configuration conf) {
+	private PipelineBuilder(PluginManager pluginFactory, Configuration conf) {
 		this.pluginFactory = pluginFactory;
 		this.configuration = conf;
 		this.pipeline = new Pipeline(conf);
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File... files) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File... files) throws IOException, SecurityException {
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		for(File f: files) {
-			try (InputStream istr = new FileInputStream(f)) {
-				parser.parse(CharStreams.fromStream(istr), f);
-			}
-		}
-		return parser.pipeline;
-	}
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		Objects.requireNonNull(url, "Invalid null URL specified");
-		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
-		try (InputStream istr = url.openStream()) {
-			parser.parse(CharStreams.fromStream(istr));
+			parser.parseFile(f);
 		}
 		return parser.pipeline;
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, String code) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, SecurityException {
+		Objects.requireNonNull(url, "Invalid null URL specified");
+		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
+		parser.parseUrl(url);
+		return parser.pipeline;
+	}
+
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, String code) throws IOException, SecurityException {
 		Objects.requireNonNull(code, "Invalid null reader specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		parser.parse(CharStreams.fromReader(new StringReader(code)));
 		return parser.pipeline;
 	}
 
-	private void parse(CharStream fromStream) throws JsonParseException, JsonMappingException, IOException {
-		parse(fromStream, null);
+	private void parseUrl(URL url) throws IOException {
+		this.currentSource = url.toString();
+		try (InputStream istr = url.openStream()) {
+			parse(CharStreams.fromStream(istr));
+		}
 	}
-	private void parse(CharStream fromStream, File currentFile) throws JsonParseException, JsonMappingException, IOException {
-		this.currentFile = currentFile;
+
+	private void parseFile(File f) throws IOException {
+		this.currentFile = f;
+		this.currentSource = f.toString();
+		try (InputStream istr = new FileInputStream(f)) {
+			parse(CharStreams.fromStream(istr));
+		}
+	}
+
+	private void parse(CharStream fromStream) {
 		ConfigLexer lexer = new ConfigLexer(fromStream);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		ConfigParser p = new ConfigParser(tokens);
@@ -150,7 +157,7 @@ public class PipelineBuilder {
 				parseOutputStageDefinition(pipeline.getOutputStage(), definition);
 			}
 			else {
-				throw new IllegalArgumentException("Invalid stage type");				
+				throw new InvalidPipelineException(currentSource, definition, "Invalid stage type");				
 			}
 		}
 	}
@@ -167,10 +174,10 @@ public class PipelineBuilder {
 	private void parseInputStageDefinition(Pipeline pipeline, Stage_definitionContext definition) {
 		for(var child: definition.getRuleContexts(ParserRuleContext.class)) {
 			if(!(child instanceof Plugin_declarationContext)) {
-				throw new UnsupportedOperationException("No support for conditionals in input/output");
+				throw new InvalidPipelineException(currentSource, child, "No support for conditionals in input/output");
 			}
 			var pluginDecl = (Plugin_declarationContext)child;
-			LOG.debug("Input plugin " + pluginDecl.IDENTIFIER());
+			LOG.debug("Input plugin {}", pluginDecl.IDENTIFIER());
 			Factory inputPlugin = pluginFactory.findInputPlugin(pluginDecl.IDENTIFIER().getText());
 			pipeline.addInput(inputPlugin, input->parsePluginConfig(input, input.wrapped, pluginDecl));
 		}
@@ -189,10 +196,10 @@ public class PipelineBuilder {
 			if(child instanceof Stage_conditionContext) {
 				var condition = (Stage_conditionContext)child;
 				if(condition.IF() != null) {
-					if(condition.logical_expression().size() == 0)
-						throw new IllegalStateException("Missing if expression!");
+					if(condition.logical_expression().isEmpty())
+						throw new InvalidPipelineException(currentSource, child, "Missing if expression!");
 					if((condition.stage_definition().size() - condition.logical_expression().size()) / 2 != 0)
-						throw new IllegalStateException("Mismatch between expression and body count!");
+						throw new InvalidPipelineException(currentSource, child, "Mismatch between expression and body count!");
 
 					ConditionalOutput output = new ConditionalOutput();
 					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
@@ -209,11 +216,11 @@ public class PipelineBuilder {
 					}
 					stage.add(output);
 				} else {
-					throw new UnsupportedOperationException("No support for else");
+					throw new InvalidPipelineException(currentSource, condition, "No support for else");
 				}
 			} else if(child instanceof Plugin_declarationContext) {
 				var pluginDecl = (Plugin_declarationContext)child;
-				LOG.debug("Output plugin " + pluginDecl.IDENTIFIER());
+				LOG.debug("Output plugin {}", pluginDecl.IDENTIFIER());
 				PipelineComponent.Factory outputPlugin = pluginFactory.findOutputPlugin(pluginDecl.IDENTIFIER().getText());
 
 				if(outputPlugin instanceof BatchOutput.Factory) {
@@ -225,7 +232,7 @@ public class PipelineBuilder {
 					stage.add(output);
 					parsePluginConfig(null, output, pluginDecl);
 				} else {
-					throw new UnsupportedOperationException("No support for output plugin of type " + outputPlugin.getClass());
+					throw new InvalidPipelineException(currentSource, child, "No support for output plugin of type " + outputPlugin.getClass());
 				}
 			}
  		}
@@ -248,10 +255,10 @@ public class PipelineBuilder {
 			if(child instanceof Stage_conditionContext) {
 				var condition = (Stage_conditionContext)child;
 				if(condition.IF() != null) {
-					if(condition.logical_expression().size() == 0)
-						throw new IllegalStateException("Missing if expression!");
+					if(condition.logical_expression().isEmpty())
+						throw new InvalidPipelineException(currentSource, condition, "Missing if expression!");
 					if((condition.stage_definition().size() - condition.logical_expression().size()) / 2 != 0)
-						throw new IllegalStateException("Mismatch between expression and body count!");
+						throw new InvalidPipelineException(currentSource, condition, "Mismatch between expression and body count!");
 
 					ConditionalFilter filter = new ConditionalFilter();
 					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
@@ -269,7 +276,7 @@ public class PipelineBuilder {
 					}
 					stage.add(filter);
 				} else {
-					throw new UnsupportedOperationException("No support for else");
+					throw new InvalidPipelineException(currentSource, condition, "No support for else");
 				}
 			}
 			else if(child instanceof Plugin_declarationContext) {
@@ -299,7 +306,7 @@ public class PipelineBuilder {
 				regexp = extractStringContent(match.STRING());
 			} 
 			else {
-				throw new UnsupportedOperationException("Unsupported right argument for regex match expressions");
+				throw new InvalidPipelineException(currentSource, exprCtx, "Unsupported right argument for regex match expressions");
 			}
 			if(match.MATCH() != null) {
 				return new RegexMatchExpression(makeRValue(rValue), regexp);
@@ -308,13 +315,13 @@ public class PipelineBuilder {
 				return new RegexNotMatchExpression(makeRValue(rValue), regexp);
 			} 
 			else { 
-				throw new UnsupportedOperationException("Unsupported regexp match type");
+				throw new InvalidPipelineException(currentSource, exprCtx, "Unsupported regexp match type");
 			}
 
 		} 
 		else if(rule instanceof In_expressionContext){
 			In_expressionContext in = (In_expressionContext)rule;
-			ensure2Children(in.rvalue());
+			ensure2Children(exprCtx, in.rvalue());
 			RvalueContext left = in.rvalue().get(0);
 			RvalueContext right = in.rvalue().get(1);
 			if(in.NOT() != null)
@@ -333,7 +340,7 @@ public class PipelineBuilder {
 			} else if(compare.NEQ() != null) {
 				return new NotEqualsExpression(makeRValue(compare.rvalue(0)), makeRValue(compare.rvalue(1)));
 			}
-			throw new UnsupportedOperationException("Comparator not supported");
+			throw new InvalidPipelineException(currentSource, rule, "Comparator not supported");
 		} 
 		else if(rule instanceof RvalueContext) {
 			RvalueContext rValue = (RvalueContext)rule;
@@ -341,29 +348,29 @@ public class PipelineBuilder {
 		} 
 		else if(exprCtx.OR() != null) {
 			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
-			ensure2Children(children);
+			ensure2Children(exprCtx, children);
 			return new OrExpression(createLogicalExpression(children.get(0)), createLogicalExpression(children.get(1)));
 		}
 		else if(exprCtx.AND() != null) {
 			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
-			ensure2Children(children);
+			ensure2Children(exprCtx, children);
 			return new AndExpression(createLogicalExpression(children.get(0)), createLogicalExpression(children.get(1)));
 		}
 		else if(exprCtx.LPAREN() != null) {
 			List<Logical_expressionContext> children = exprCtx.getRuleContexts(Logical_expressionContext.class);
 			if(children.size() != 1) {
-				throw new UnsupportedOperationException("Can't find a single expression inside parentheses");
+				throw new InvalidPipelineException(currentSource, exprCtx, "Can't find a single expression inside parentheses");
 			}
 			return createLogicalExpression(children.get(0));
 		}
 		else {
-			throw new UnsupportedOperationException("Unrecognized logical operator");
+			throw new InvalidPipelineException(currentSource, exprCtx, "Unrecognized logical operator");
 		}
 	}
 
-	private <T> void ensure2Children(List<T> children) {
+	private <T> void ensure2Children(ParserRuleContext exprCtx, List<T> children) {
 		if(children.size() != 2) {
-			throw new UnsupportedOperationException("Can't find two operators for a binary operator");
+			throw new InvalidPipelineException(currentSource, exprCtx, "Can't find two operators for a binary operator");
 		}
 	}
 
@@ -374,7 +381,7 @@ public class PipelineBuilder {
 			List<String> s = new ArrayList<>();
 			for (var item : ctx.array().array_element()) {
 				if (item.STRING() == null) {
-					throw new RuntimeException("No support for non-string in arrays");
+					throw new InvalidPipelineException(currentSource, ctx, "No support for non-string in arrays");
 				}
 				s.add(extractStringContent(item.STRING()));
 			}
@@ -384,7 +391,7 @@ public class PipelineBuilder {
 			String[] identifiers = elementList.stream().map(e->e.IDENTIFIER().getText()).toArray(String[]::new);
 			return RValueBuilder.makeFieldRefRValue(identifiers);
 		}
-		throw new UnsupportedOperationException("Unsupported rvalue");
+		throw new InvalidPipelineException(currentSource, ctx, "Unsupported rvalue");
 	}
 
 	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) {
@@ -400,14 +407,14 @@ public class PipelineBuilder {
 				} else if(haveField(plugin.getClass(), attribute.IDENTIFIER().getText())) {
 					setObjectParameter(plugin, attribute);
 				} else {
-					throw new RuntimeException("plugin '" + pluginDecl.IDENTIFIER() + "' has no attribute '"
+					throw new InvalidPipelineException(currentSource, attribute, "plugin '" + pluginDecl.IDENTIFIER() + "' has no attribute '"
 							+ attribute.IDENTIFIER().getText() + "'");
 				}
 			}
-			validateNonNull(plugin);
-		} catch(Exception e) {
-			throw new RuntimeException("Failed parsing configuration", e);
+		} catch (NoSuchFieldException | IllegalAccessException | InvocationTargetException e) {
+			throw new IllegalStateException(e);
 		}
+		validateNonNull(pluginDecl, plugin);
 	}
 
 	private void injectInjectables(Object plugin) {
@@ -428,7 +435,7 @@ public class PipelineBuilder {
 		}
 	}
 
-	private void validateNonNull(Object plugin) {
+	private void validateNonNull(Plugin_declarationContext pluginDecl, Object plugin) {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		Validator validator = factory.getValidator();
 		Set<ConstraintViolation<Object>> violations = validator.validate(plugin);
@@ -436,26 +443,26 @@ public class PipelineBuilder {
 			LOG.warn("Validation failed for " + plugin.getClass() + ": " + violation.getPropertyPath() + " " + violation.getMessage());
 		}
 		if(!violations.isEmpty()) {
-			throw new IllegalArgumentException("Invalid configuration. Parameters did not pass validation");
+			throw new InvalidPipelineException(currentSource, pluginDecl, "Invalid configuration. Parameters did not pass validation");
 		}
 		
 	}
 
-	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
 		Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
 		LOG.debug("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
 		Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
 		field.setAccessible(true);
 		if (value.STRING() != null) {
 			String extractStringContent = extractStringContent(value.STRING());
-			setFieldValueString(plugin, field, extractStringContent);
+			setFieldValueString(attribute, plugin, field, extractStringContent);
 		} else if (value.DECIMAL() != null) {
 			field.set(plugin, Integer.parseInt(value.DECIMAL().getText()));
 		} else if (value.array() != null) {
 			List<String> s = new ArrayList<>();
 			for (var item : value.array().array_element()) {
 				if (item.STRING() == null) {
-					throw new RuntimeException("No support for non-string in arrays");
+					throw new InvalidPipelineException(currentSource, attribute, "No support for non-string in arrays");
 				}
 				s.add(extractStringContent(item.STRING()));
 			}
@@ -465,7 +472,7 @@ public class PipelineBuilder {
 			Map<String,Object> kv = new LinkedHashMap<>();
 			for(Hash_elementContext elmCtx: hashCtx.hash_element()) {
 				if(elmCtx.STRING() == null) {
-					throw new UnsupportedOperationException("No support for this hash key type... expected a string");
+					throw new InvalidPipelineException(currentSource, elmCtx, "No support for this hash key type... expected a string");
 				}
 				String hashKey = extractStringContent(elmCtx.STRING());
 				TerminalNode id = elmCtx.plugin_attribute_value().IDENTIFIER();
@@ -477,14 +484,14 @@ public class PipelineBuilder {
 					} else if("false".equals(idText)) {
 						kv.put(hashKey, false);
 					} else {
-						throw new UnsupportedOperationException("No support for identifier " + id);
+						throw new InvalidPipelineException(currentSource, elmCtx, "No support for identifier " + id);
 					}
 				}
 				else if(valueNode != null) {
 					// what about integers?
 					kv.put(hashKey, extractStringContent(valueNode));
 				} else {
-					throw new UnsupportedOperationException("No support for this hash value type... supporting a string");
+					throw new InvalidPipelineException(currentSource, elmCtx, "No support for this hash value type... supporting a string");
 				}
 			}
 			field.set(plugin, kv);
@@ -495,14 +502,14 @@ public class PipelineBuilder {
 			} else if("false".equals(identifier)) {
 				field.set(plugin, false);
 			} else {
-				throw new UnsupportedOperationException("Unsupported identifier " + identifier);
+				throw new InvalidPipelineException(currentSource, value, "Unsupported identifier " + identifier);
 			}
 		} else {
-			throw new UnsupportedOperationException("Unsupported plugin type");
+			throw new InvalidPipelineException(currentSource, value, "Unsupported plugin type");
 		}
 	}
 
-	private void setFieldValueString(Object plugin, Field field, String value)
+	private void setFieldValueString(ParserRuleContext ctx, Object plugin, Field field, String value)
 			throws IllegalAccessException, InvocationTargetException {
 		if(field.getType().isAssignableFrom(String.class)) {
 			field.set(plugin, value);
@@ -531,7 +538,7 @@ public class PipelineBuilder {
 				return;
 			}
 		}
-		throw new IllegalStateException("Don't know how to initialize field " + plugin.getClass() + "." + field.getName() + " with a string");
+		throw new InvalidPipelineException(currentSource, ctx, "Don't know how to initialize field " + plugin.getClass() + "." + field.getName() + " with a string");
 	}
 
 	private File makeFileArg(String value) {

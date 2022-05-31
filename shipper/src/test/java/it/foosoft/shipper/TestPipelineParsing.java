@@ -2,6 +2,7 @@ package it.foosoft.shipper;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 
@@ -38,21 +39,28 @@ import com.logstash.ConfigParser.Stage_conditionContext;
 import com.logstash.ConfigParser.Stage_declarationContext;
 import com.logstash.ConfigParser.Stage_definitionContext;
 
+import it.foosoft.shipper.core.InvalidPipelineException;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
 import it.foosoft.shipper.plugins.DefaultPluginFactory;
 
-public class TestPipelineParsing {
+class TestPipelineParsing {
 
 	@Test
-	public void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
-		Object pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
+	void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
 		walk();
 	}
 	
 	@Test
-	public void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+	void testError() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		InvalidPipelineException exception = assertThrows(InvalidPipelineException.class, ()->PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/error.conf")));
+		assertEquals(5, exception.getLineNumber());
+	}
+
+	@Test
+	void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
 		assertEquals(1, pipeline.getFilteringStage().size());
 	}
