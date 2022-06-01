@@ -50,7 +50,7 @@ task rpm(type: Rpm, dependsOn: 'fatJar') {
     fileMode 0644
     license 'Apache License'
     packageDescription 'logstash (wannabe) compatible log shipper'
-    requires('adoptopenjdk-15-hotspot-jre')
+    requires('adoptopenjdk-16-hotspot-jre')
     vendor 'Foosoft Srl'
     from(fatJar.outputs.files) {
         into '/usr/share/shipper'
@@ -81,7 +81,7 @@ dependencies {
     implementation project(path: ":shipper-api")
     implementation project(path: ":shipper-plugins")
     implementation project(path: ":shipper-core")
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.14.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.17.2'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.12.1'

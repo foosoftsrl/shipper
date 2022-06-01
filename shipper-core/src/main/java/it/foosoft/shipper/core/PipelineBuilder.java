@@ -82,7 +82,7 @@ import it.foosoft.shipper.core.rvalue.StringRValue;
  */
 public class PipelineBuilder {
 	
-	public static Logger LOG = LoggerFactory.getLogger(PipelineBuilder.class);
+	public static final Logger LOG = LoggerFactory.getLogger(PipelineBuilder.class);
 
 	public enum StageType {
 		INPUT,
@@ -102,7 +102,7 @@ public class PipelineBuilder {
 		this.pipeline = new Pipeline(conf);
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File... files) throws IOException, SecurityException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, File... files) throws IOException, InvalidPipelineException {
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		for(File f: files) {
 			parser.parseFile(f);
@@ -110,28 +110,28 @@ public class PipelineBuilder {
 		return parser.pipeline;
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, SecurityException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, URL url) throws IOException, InvalidPipelineException {
 		Objects.requireNonNull(url, "Invalid null URL specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		parser.parseUrl(url);
 		return parser.pipeline;
 	}
 
-	public static Pipeline build(PluginManager pluginFactory, Configuration conf, String code) throws IOException, SecurityException {
+	public static Pipeline build(PluginManager pluginFactory, Configuration conf, String code) throws IOException, InvalidPipelineException {
 		Objects.requireNonNull(code, "Invalid null reader specified");
 		PipelineBuilder parser = new PipelineBuilder(pluginFactory, conf);
 		parser.parse(CharStreams.fromReader(new StringReader(code)));
 		return parser.pipeline;
 	}
 
-	private void parseUrl(URL url) throws IOException {
+	private void parseUrl(URL url) throws IOException, InvalidPipelineException {
 		this.currentSource = url.toString();
 		try (InputStream istr = url.openStream()) {
 			parse(CharStreams.fromStream(istr));
 		}
 	}
 
-	private void parseFile(File f) throws IOException {
+	private void parseFile(File f) throws IOException, InvalidPipelineException {
 		this.currentFile = f;
 		this.currentSource = f.toString();
 		try (InputStream istr = new FileInputStream(f)) {
@@ -139,7 +139,7 @@ public class PipelineBuilder {
 		}
 	}
 
-	private void parse(CharStream fromStream) {
+	private void parse(CharStream fromStream) throws InvalidPipelineException {
 		ConfigLexer lexer = new ConfigLexer(fromStream);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		ConfigParser p = new ConfigParser(tokens);
@@ -169,9 +169,10 @@ public class PipelineBuilder {
 	 *  
 	 * @param pipeline the pipeline in which input blocks are stored 
 	 * @param definition the definition of the stage
+	 * @throws InvalidPipelineException 
 	 * 
 	 */
-	private void parseInputStageDefinition(Pipeline pipeline, Stage_definitionContext definition) {
+	private void parseInputStageDefinition(Pipeline pipeline, Stage_definitionContext definition) throws InvalidPipelineException {
 		for(var child: definition.getRuleContexts(ParserRuleContext.class)) {
 			if(!(child instanceof Plugin_declarationContext)) {
 				throw new InvalidPipelineException(currentSource, child, "No support for conditionals in input/output");
@@ -190,8 +191,9 @@ public class PipelineBuilder {
 	 *  
 	 * @param pipeline the pipeline in which output blocks are stored
 	 * @param definition the definition of the stage
+	 * @throws InvalidPipelineException 
 	 */
-	private void parseOutputStageDefinition(Stage<Output> stage, Stage_definitionContext definition) {
+	private void parseOutputStageDefinition(Stage<Output> stage, Stage_definitionContext definition) throws InvalidPipelineException {
 		for(var child: definition.getRuleContexts(ParserRuleContext.class)) {
 			if(child instanceof Stage_conditionContext) {
 				var condition = (Stage_conditionContext)child;
@@ -203,7 +205,7 @@ public class PipelineBuilder {
 
 					ConditionalOutput output = new ConditionalOutput();
 					for(int blockIdx = 0; blockIdx < condition.logical_expression().size(); blockIdx++) {
-						ConditionalBlock<Output> block = new ConditionalBlock<Output>();
+						ConditionalBlock<Output> block = new ConditionalBlock<>();
 						Logical_expressionContext exprCtx = condition.logical_expression(blockIdx);
 						block.expr = createLogicalExpression(exprCtx); 
 						block.stage = new Stage<>();
@@ -246,10 +248,11 @@ public class PipelineBuilder {
 	 * @param stage the stage in which to insert blocks. May be the pipeline's filtering stage, or a conditional
 	 * stage block
 	 * @param definition
+	 * @throws InvalidPipelineException 
 	 * @throws NoSuchFieldException
 	 * @throws IllegalAccessException
 	 */
-	private void parseFilteringStage(Stage<Filter> stage, Stage_definitionContext definition) {
+	private void parseFilteringStage(Stage<Filter> stage, Stage_definitionContext definition) throws InvalidPipelineException {
 		for(int i = 0; i < definition.getChildCount(); i++) {
 			ParseTree child = definition.getChild(i);
 			if(child instanceof Stage_conditionContext) {
@@ -293,7 +296,7 @@ public class PipelineBuilder {
 		}
 	}
 
-	private LogicalExpression createLogicalExpression(Logical_expressionContext exprCtx) {
+	private LogicalExpression createLogicalExpression(Logical_expressionContext exprCtx) throws InvalidPipelineException {
 		ParserRuleContext rule = exprCtx.getRuleContext(ParserRuleContext.class, 0);
 		if(rule instanceof Match_expressionContext) {
 			Match_expressionContext match = (Match_expressionContext)rule;
@@ -368,13 +371,13 @@ public class PipelineBuilder {
 		}
 	}
 
-	private <T> void ensure2Children(ParserRuleContext exprCtx, List<T> children) {
+	private <T> void ensure2Children(ParserRuleContext exprCtx, List<T> children) throws InvalidPipelineException {
 		if(children.size() != 2) {
 			throw new InvalidPipelineException(currentSource, exprCtx, "Can't find two operators for a binary operator");
 		}
 	}
 
-	private RValue makeRValue(RvalueContext ctx) {
+	private RValue makeRValue(RvalueContext ctx) throws InvalidPipelineException {
 		if(ctx.STRING() != null) {
 			return new StringRValue(extractStringContent(ctx.STRING()));
 		} else if(ctx.array() != null) {
@@ -394,7 +397,7 @@ public class PipelineBuilder {
 		throw new InvalidPipelineException(currentSource, ctx, "Unsupported rvalue");
 	}
 
-	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) {
+	private void parsePluginConfig(Object wrapper, Object plugin, Plugin_declarationContext pluginDecl) throws InvalidPipelineException {
 		Plugin_definitionContext pluginDefinition = pluginDecl.plugin_definition();
 		if(wrapper != null) {
 			injectInjectables(wrapper);
@@ -435,7 +438,7 @@ public class PipelineBuilder {
 		}
 	}
 
-	private void validateNonNull(Plugin_declarationContext pluginDecl, Object plugin) {
+	private void validateNonNull(Plugin_declarationContext pluginDecl, Object plugin) throws InvalidPipelineException {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		Validator validator = factory.getValidator();
 		Set<ConstraintViolation<Object>> violations = validator.validate(plugin);
@@ -448,7 +451,7 @@ public class PipelineBuilder {
 		
 	}
 
-	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
+	private void setObjectParameter(Object plugin, Plugin_attributeContext attribute) throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, InvalidPipelineException {
 		Plugin_attribute_valueContext value = attribute.plugin_attribute_value();
 		LOG.debug("  attribute " + attribute.IDENTIFIER() + " is " + value.getText());
 		Field field = plugin.getClass().getDeclaredField(attribute.IDENTIFIER().getText());
@@ -510,7 +513,7 @@ public class PipelineBuilder {
 	}
 
 	private void setFieldValueString(ParserRuleContext ctx, Object plugin, Field field, String value)
-			throws IllegalAccessException, InvocationTargetException {
+			throws IllegalAccessException, InvocationTargetException, InvalidPipelineException {
 		if(field.getType().isAssignableFrom(String.class)) {
 			field.set(plugin, value);
 			return;

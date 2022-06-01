@@ -31,7 +31,7 @@ public class TestPluginFieldInterpolation {
 	}
 
 	@Test
-	public void testSimpleText() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testSimpleText() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		output {
 	        out{field =>"test"}
@@ -52,7 +52,7 @@ public class TestPluginFieldInterpolation {
 	}
 
 	@Test
-	public void testNakedFieldExpansion() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testNakedFieldExpansion() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		output {
 	        out{field =>"%{field}"}
@@ -73,7 +73,7 @@ public class TestPluginFieldInterpolation {
 	}
 
 	@Test
-	public void testBracketFieldExpansion() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testBracketFieldExpansion() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		output {
 	        out{field =>"%{[field]}"}
@@ -94,7 +94,7 @@ public class TestPluginFieldInterpolation {
 	}
 
 	@Test
-	public void testMetadataFieldExpansion() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testMetadataFieldExpansion() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		output {
 	        out{field =>"%{[@metadata][field]}"}

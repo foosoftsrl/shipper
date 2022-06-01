@@ -56,7 +56,7 @@ public class Shipper implements Callable<Integer> {
     @Option(names = {"--input-field"}, description = "field added when using file input (key=value)")
     private String inputField = null;
 
-    public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
+    public static void main(String[] args) {
         int exitCode = new CommandLine(new Shipper()).execute(args);
         System.exit(exitCode);
     }
@@ -107,7 +107,7 @@ public class Shipper implements Callable<Integer> {
 		    		pipelineCfg.workers != null ? pipelineCfg.workers: this.threadCount, 
     				pipelineCfg.batchSize != null ? pipelineCfg.batchSize: this.batchSize
 		    );
-		    File[] asFiles = cfgFilePathList.stream().map(p->p.toFile()).toArray(File[]::new);
+		    File[] asFiles = cfgFilePathList.stream().map(Path::toFile).toArray(File[]::new);
 	    	pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, cfg, asFiles);
 	    }
 	    if(output != null) {

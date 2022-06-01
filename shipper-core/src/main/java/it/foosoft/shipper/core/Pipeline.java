@@ -1,7 +1,6 @@
 package it.foosoft.shipper.core;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,13 +10,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.foosoft.shipper.api.Bag;
@@ -34,8 +30,8 @@ public class Pipeline {
 	public static class Configuration {
 		final int numThreads;
 		final int batchSize;
-		public static Configuration MINIMAL = new Configuration(1);
-		public static Configuration PERFORMANCE = new Configuration(Runtime.getRuntime().availableProcessors());
+		public static final Configuration MINIMAL = new Configuration(1);
+		public static final Configuration PERFORMANCE = new Configuration(Runtime.getRuntime().availableProcessors());
 
 		public Configuration(int numThreads) {
 			this(numThreads, 512);
@@ -88,7 +84,11 @@ public class Pipeline {
 		}
 	}
 
-	public void addInput(Input.Factory inputPlugin, Consumer<InputWrapper> configurator) {
+	public static interface ParameterParser {
+		void accept(InputWrapper wrapper) throws InvalidPipelineException;
+	}
+	
+	public void addInput(Input.Factory inputPlugin, ParameterParser configurator) throws InvalidPipelineException {
 		InputWrapper wrapper = new InputWrapper(this, inputPlugin);
 		configurator.accept(wrapper);
 		inputStage.add(wrapper);
@@ -156,7 +156,7 @@ public class Pipeline {
 			File src = new File(PIPELINE_STATUS_PATH);
 			new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(src, bag);
 		} catch(Exception e) {
-			LOG.warn("Can't save filter state: " + e.getMessage());
+			LOG.warn("Can't save filter state: {}", e.getMessage());
 		}
 	}
 

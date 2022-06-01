@@ -24,8 +24,8 @@ subprojects {
        testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
        testImplementation group: 'org.hamcrest', name: 'hamcrest', version: '2.2'
      }
-     sourceCompatibility = 15
-     targetCompatibility = 15
+     sourceCompatibility = 16
+     targetCompatibility = 16
 
                 // mark all src/devel folders as "test", in order to have them access
                 // the test classpath.

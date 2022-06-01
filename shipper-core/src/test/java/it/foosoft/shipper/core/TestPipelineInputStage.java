@@ -3,7 +3,6 @@ package it.foosoft.shipper.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -18,14 +17,14 @@ import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
-public class TestPipelineInputStage {
+class TestPipelineInputStage {
 	class SimpleInput implements Input {
 		public SimpleInput(InputContext ctx) {
 		}
 	}
 
 	@Test
-	public void test() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException, InterruptedException {
+	public void test() throws IOException, InvalidPipelineException, InterruptedException {
 		String pipelineDef = """
 		input {
 	        test{

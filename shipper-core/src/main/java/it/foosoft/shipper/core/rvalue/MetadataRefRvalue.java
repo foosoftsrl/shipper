@@ -41,7 +41,7 @@ public class MetadataRefRvalue implements RValue, FieldRef {
 	
 	@Override
 	public String toString() {
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append("[@metadata]");
 		for(String identifier: identifiers) {
 			buf.append("[").append(identifier).append("]");

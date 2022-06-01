@@ -32,7 +32,7 @@ public class TestOutputConditionals {
 	}
 
 	@Test
-	public void testPipelineWithMatchRegexCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	public void testPipelineWithMatchRegexCondition() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		output {
 		    if [message] =~ /^if/ {

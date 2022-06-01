@@ -48,7 +48,7 @@ import it.foosoft.shipper.plugins.DefaultPluginFactory;
 class TestPipelineParsing {
 
 	@Test
-	void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+	void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvalidPipelineException {
 		PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
 		walk();
 	}
@@ -60,7 +60,7 @@ class TestPipelineParsing {
 	}
 
 	@Test
-	void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+	void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvalidPipelineException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
 		assertEquals(1, pipeline.getFilteringStage().size());
 	}

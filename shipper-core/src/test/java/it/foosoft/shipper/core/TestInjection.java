@@ -3,20 +3,19 @@ package it.foosoft.shipper.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.easymock.EasyMock;
 import org.junit.jupiter.api.Test;
 
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
-import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
-public class TestInjection {
+class TestInjection {
 
 	PluginManager manager = EasyMock.createMock(PluginManager.class);
 
@@ -36,7 +35,7 @@ public class TestInjection {
 	}
 
 	@Test
-	public void test() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void test() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		filter {
 	        inject{

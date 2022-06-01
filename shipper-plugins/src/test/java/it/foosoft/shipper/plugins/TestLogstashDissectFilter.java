@@ -11,13 +11,14 @@ import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.EventImpl;
+import it.foosoft.shipper.core.InvalidPipelineException;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
 
 class TestLogstashDissectFilter {
 	@Test
-	void testSplitWithTabs() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+	void testSplitWithTabs() throws IOException, InvalidPipelineException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, getClass().getResource("files/dissect_logstash.conf"));
 		LogstashDissectFilter filter = (LogstashDissectFilter)pipeline.findFilterPluginById("dissect");
 		filter.start();

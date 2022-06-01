@@ -3,18 +3,17 @@ package it.foosoft.shipper.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.easymock.EasyMock;
 import org.junit.jupiter.api.Test;
 
+import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FilterPlugin;
-import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 
-public class TestFilterConditionals {
+class TestFilterConditionals {
 
 	PluginManager manager = EasyMock.createMock(PluginManager.class);
 	
@@ -30,7 +29,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithMatchRegexCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithMatchRegexCondition() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if [message] =~ /^if/ {
@@ -70,7 +69,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithMatchStringCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithMatchStringCondition() throws InvalidPipelineException, IOException, InvalidPipelineException {
 		String pipelineDef = """
 		filter {
 		    if [message] =~ "if" {
@@ -104,7 +103,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithNotMatchStringCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithNotMatchStringCondition() throws InvalidPipelineException, IOException, InvalidPipelineException {
 		String pipelineDef = """
 		filter {
 		    if [message] !~ "if" {
@@ -138,7 +137,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithInCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithInCondition() throws IOException, InvalidPipelineException {
 		String pipelineDef = """
 		filter {
 		    if [message] in ["if","fi"] {
@@ -175,7 +174,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithNotInCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithNotInCondition() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if [message] not in ["else","fi"] {
@@ -212,7 +211,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithOrCondition() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithOrCondition() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if [message] in ["if"] or [message] in ["fi"] {
@@ -249,7 +248,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithOrConditionAndParentheses() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithOrConditionAndParentheses() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if (([message] in ["if"]) or ([message] in ["fi"])) {
@@ -286,7 +285,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithParentheses() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithParentheses() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if (([message] in ["if"]) and ([message] in ["if"])) {
@@ -319,7 +318,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithNegateExpression() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithNegateExpression() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if (!([message] in ["else"])) {
@@ -352,7 +351,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithNegateRValue() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithNegateRValue() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if ![message] {
@@ -385,7 +384,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithIfRValue() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithIfRValue() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if [message] {
@@ -418,7 +417,7 @@ public class TestFilterConditionals {
 	}
 
 	@Test
-	public void testPipelineWithCompareExpression() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, IOException {
+	void testPipelineWithCompareExpression() throws InvalidPipelineException, IOException {
 		String pipelineDef = """
 		filter {
 		    if [message] == "test" {

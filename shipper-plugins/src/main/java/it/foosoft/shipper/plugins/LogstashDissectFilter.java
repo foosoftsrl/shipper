@@ -62,7 +62,7 @@ public class LogstashDissectFilter implements FilterPlugin {
 				return false;
 			}
 			if(!(attr instanceof String)) {
-				LOG.warn("Unsupported field type for " + pattern.getKey());
+				LOG.warn("Unsupported field type for {}", pattern.getKey());
 				return false;
 			}
 

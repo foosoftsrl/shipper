@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import it.foosoft.shipper.core.InvalidPipelineException;
 import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.PipelineBuilder;
@@ -22,7 +23,7 @@ public class BenchmarkPipeline {
 	private static final String CLINK_FULL = "files/clinkfull.conf";
 
 	static ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
-	public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException {
+	public static void main(String[] args) throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, InterruptedException, InvalidPipelineException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, 
 				Configuration.MINIMAL, 
 				BenchmarkPipeline.class.getResource(CLINK_FULL));
