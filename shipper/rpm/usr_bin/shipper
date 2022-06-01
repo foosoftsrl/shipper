@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/lib/jvm/adoptopenjdk-15-hotspot-jre/bin/java -jar /usr/share/shipper/shipper-fat.jar $@
+/usr/lib/jvm/adoptopenjdk-16-hotspot-jre/bin/java -jar /usr/share/shipper/shipper-fat.jar $@
