@@ -1,6 +1,7 @@
 package it.foosoft.shipper.core;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,7 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Input;
 import it.foosoft.shipper.api.Output;
+import it.foosoft.shipper.api.PipelineComponent;
 
 public class Pipeline {
 	private static final String PIPELINE_STATUS_PATH = "/var/lib/shipper/status";
@@ -255,6 +258,27 @@ public class Pipeline {
 		return null;
 	}
 	
+	public <T extends PipelineComponent> void traverse(Stage<T> stage, Consumer<PipelineComponent> consumer) {
+		for(var filter: stage) {
+			consumer.accept(filter);
+			if(filter instanceof Stage innerStage) {
+				traverse(innerStage, consumer);
+			}
+		}
+	}
+	
+	public void traverse(Consumer<PipelineComponent> consumer) {
+		traverse(filterStage, consumer);
+	}
+
+	public List<PipelineComponent> getComponents() {
+		var list = new ArrayList<PipelineComponent>();
+		traverse(filterStage, list::add);
+		traverse(inputStage, list::add);
+		traverse(outputStage, list::add);
+		return list;
+	}
+
 	public long getInputCounter() {
 		return inputCounter.get();
 	}

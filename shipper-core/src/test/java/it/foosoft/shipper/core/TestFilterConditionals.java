@@ -47,7 +47,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(2, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -86,7 +86,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -120,7 +120,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -153,7 +153,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -190,7 +190,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -227,7 +227,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -264,7 +264,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -301,7 +301,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -334,7 +334,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -367,7 +367,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -400,7 +400,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
@@ -433,7 +433,7 @@ class TestFilterConditionals {
 
 		Pipeline pipeline = PipelineBuilder.build(manager, Configuration.MINIMAL, pipelineDef);
 		assertEquals(1, pipeline.getFilteringStage().size());
-		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getFilteringStage().get(0);
+		ConditionalFilter cFilter = (ConditionalFilter)pipeline.getComponents().stream().filter(c->c.getClass() == ConditionalFilter.class).findFirst().orElse(null);
 		assertEquals(1, cFilter.blocks.size());
 		assertEquals(1, cFilter.elseStage.size());
 
