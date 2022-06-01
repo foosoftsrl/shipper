@@ -37,7 +37,7 @@ public class BenchmarkPipeline {
 		for(int i = 0; i < 5; i++) {
 			Thread.sleep(1000);
 			long now = System.nanoTime();
-			long countNow = pipeline.getInputCounter();
+			long countNow = pipeline.getInputEventCounter();
 			long processed = countNow - lastCount;
 			double elapsedSecs = (now - lastTime) / 1000000000.0;
 			lastCount = countNow;

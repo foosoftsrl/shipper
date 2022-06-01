@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.validation.constraints.NotNull;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FilterPlugin;
+import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.core.modifiers.AddField;
 import it.foosoft.shipper.core.modifiers.AddTag;
@@ -88,4 +90,9 @@ public class FilterWrapper implements Filter {
 		return inner;
 	}
 
+	@Override
+	public void traverse(Consumer<PipelineComponent> consumer) {
+		consumer.accept(this);
+		consumer.accept(inner);
+	}
 }

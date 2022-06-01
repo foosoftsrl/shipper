@@ -58,6 +58,7 @@ import it.foosoft.shipper.api.Input.Factory;
 import it.foosoft.shipper.api.Output;
 import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
+import it.foosoft.shipper.api.PostConstruct;
 import it.foosoft.shipper.api.RValue;
 import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.core.Pipeline.Configuration;
@@ -414,10 +415,27 @@ public class PipelineBuilder {
 							+ attribute.IDENTIFIER().getText() + "'");
 				}
 			}
+			validateNonNull(pluginDecl, plugin);
+			if(wrapper != null)
+				invokePostConstruct(wrapper);
+			invokePostConstruct(plugin);
 		} catch (NoSuchFieldException | IllegalAccessException | InvocationTargetException e) {
 			throw new IllegalStateException(e);
 		}
-		validateNonNull(pluginDecl, plugin);
+	}
+
+	private void invokePostConstruct(Object plugin) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		for(var method: plugin.getClass().getDeclaredMethods()) {
+			PostConstruct postConstructAnnot = method.getAnnotation(PostConstruct.class);
+			if(postConstructAnnot != null) {
+				method.setAccessible(true);
+				if(method.getParameterCount() != 0) {
+					throw new InvalidPluginImplementationException("@PostConstruct annotated method " + method + " must have no parameters");
+				}
+				method.invoke(plugin);
+			}
+		}
+		
 	}
 
 	private void injectInjectables(Object plugin) {

@@ -47,17 +47,25 @@ public class Pipeline {
 		
 	}
 	
-	Stage<InputWrapper> inputStage = new Stage<>();
+	/**
+	 * all the input{} nodes 
+	 */  
+	private Stage<InputWrapper> inputStage = new Stage<>();
 	
 	/**
 	 * This is all the filter{} nodes flattened
 	 */  
-	Stage<Filter> filterStage = new Stage<>();
+	private Stage<Filter> filterStage = new Stage<>();
 
-	Stage<Output> outputStage = new Stage<>();
+	/**
+	 * all the output{} nodes 
+	 */  
+	private Stage<Output> outputStage = new Stage<>();
 
-	AtomicLong inputCounter = new AtomicLong(0);
-	AtomicLong outputCounter = new AtomicLong(0);
+	
+	private AtomicLong inputEventsCounter = new AtomicLong(0);
+
+	private AtomicLong outputEventsCounter = new AtomicLong(0);
 	
 	ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactory() {
 		AtomicInteger id = new AtomicInteger(0);
@@ -137,7 +145,8 @@ public class Pipeline {
 			// stop the filter stage, this is very easy
 			filterStage.stop();
 			LOG.info("Stopped filter stage");
-			// now 
+
+			// stop the output stage
 			outputStage.stop();
 			LOG.info("Stopped output filters");
 			
@@ -164,7 +173,7 @@ public class Pipeline {
 	}
 
 	public void processInputEvent(Event e) {
-		inputCounter.incrementAndGet();
+		inputEventsCounter.incrementAndGet();
 		queue.process(e);
 	}
 	
@@ -193,7 +202,7 @@ public class Pipeline {
 							for(var output: outputStage) {
 								output.process(evt);
 							}
-							outputCounter.incrementAndGet();
+							outputEventsCounter.incrementAndGet();
 						}
 					}
 				}
@@ -223,9 +232,9 @@ public class Pipeline {
 		Map<String,Integer> queueSizes = new HashMap<>();
 		queueSizes.put("processing", queue.size());
 		int id = 0;
-		for(Output queue: outputStage) {
-			if(queue instanceof BatchAdapter) {
-				queueSizes.put("output-" + id, ((BatchAdapter)queue).queue.size());
+		for(Output item: outputStage) {
+			if(item instanceof BatchAdapter batchAdapter) {
+				queueSizes.put("output-" + id, batchAdapter.queue.size());
 			}
 			id++;
 		}
@@ -239,52 +248,53 @@ public class Pipeline {
 	 * @return
 	 */
 	public FilterPlugin findFilterPluginById(String id) {
-		return findFilterInStageById(filterStage, id);
+		List<FilterWrapper> result = new ArrayList<>();
+		filterStage.traverse(f->{
+			if(f instanceof FilterWrapper wrapper && wrapper.getId().equals(id))
+				result.add(wrapper);
+		});
+		if(result.isEmpty())
+			return null;
+		return result.get(0).getInner();
 	}
 
-	private FilterPlugin findFilterInStageById(Stage filterStage, String id) {
-		for(var filter: filterStage) {
-			if(filter instanceof Stage) {
-				FilterPlugin plugin = findFilterInStageById((Stage)filter, id);
-				if(plugin != null)
-					return plugin;
-			}
-			else if(filter instanceof FilterWrapper) {
-				FilterWrapper wrapper = (FilterWrapper)filter;
-				if(wrapper.getId().equals(id))
-					return wrapper.getInner();
-				}
-		}
-		return null;
-	}
-	
-	public <T extends PipelineComponent> void traverse(Stage<T> stage, Consumer<PipelineComponent> consumer) {
-		for(var filter: stage) {
-			consumer.accept(filter);
-			if(filter instanceof Stage innerStage) {
-				traverse(innerStage, consumer);
-			}
-		}
-	}
-	
-	public void traverse(Consumer<PipelineComponent> consumer) {
-		traverse(filterStage, consumer);
+	/**
+	 * Find a plugin by class name. Method useful for tests!  
+	 * 
+	 * @param clazz 
+	 * @return
+	 */
+	public <T extends FilterPlugin> T findFilterPluginByClass(Class<T> clazz) {
+		List<T> result = new ArrayList<>();
+		filterStage.traverse(f->{
+			if(f.getClass().isAssignableFrom(clazz))
+				result.add((T)f);
+		});
+		if(result.isEmpty())
+			return null;
+		return result.get(0);
 	}
 
+	/**
+	 * Enumerate all PipelineComponent. Note that filter plugins are not components, they have simpler APIs
+	 * which are "decorated" by {@link FilterWrapper}
+	 * 
+	 * @return
+	 */
 	public List<PipelineComponent> getComponents() {
 		var list = new ArrayList<PipelineComponent>();
-		traverse(filterStage, list::add);
-		traverse(inputStage, list::add);
-		traverse(outputStage, list::add);
+		filterStage.traverse(list::add);
+		inputStage.traverse(list::add);
+		outputStage.traverse(list::add);
 		return list;
 	}
 
-	public long getInputCounter() {
-		return inputCounter.get();
+	public long getInputEventCounter() {
+		return inputEventsCounter.get();
 	}
 
-	public long getOutputCounter() {
-		return outputCounter.get();
+	public long getOutputEventCounter() {
+		return outputEventsCounter.get();
 	}
 
 

@@ -165,7 +165,7 @@ public class Shipper implements Callable<Integer> {
 					stopRequest.wait(1000);
 				}
 				long now = System.nanoTime();
-				long countNow = pipeline.getOutputCounter();
+				long countNow = pipeline.getOutputEventCounter();
 				long processed = countNow - lastCount;
 				double elapsedSecs = (now - lastTime) / 1000000000.0;
 				lastCount = countNow;

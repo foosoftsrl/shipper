@@ -21,6 +21,7 @@ import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
+import it.foosoft.shipper.api.PostConstruct;
 
 public class DateFilter implements FilterPlugin {
 	private static final Logger LOG = LoggerFactory.getLogger(DateFilter.class);
@@ -36,6 +37,9 @@ public class DateFilter implements FilterPlugin {
 	@NotNull
 	@ConfigurationParm
 	public String[] match;
+
+	@ConfigurationParm
+	public String[] tag_on_failure = new String[]{"_dateparsefailure"};
 
 	@Inject
 	public FieldRefBuilder fieldRefBuilder;
@@ -56,32 +60,8 @@ public class DateFilter implements FilterPlugin {
 		
 	}
 
-	/**
-	 * 	Commodity constructor for unit tests
-	 * @param fieldRefBuilder
-	 */
-	public DateFilter(FieldRefBuilder fieldRefBuilder) {
-		this.fieldRefBuilder = fieldRefBuilder;
-	}
-
-	@Override
-	public boolean process(Event evt) {
-		Object obj = evt.getField(fieldName);
-		if(!(obj instanceof String)) {
-			return false;
-		}
-		String dateAsText = (String)obj;
-		try {
-			targetField.set(evt, dateParser.parse(dateAsText));
-		} catch (Exception e) {
-			LOG.error("Failed parsing date {}", dateAsText, e);
-			return false;
-		}
-		return true;
-	}
-
-	@Override
-	public void start() {
+	@PostConstruct
+	void postConstruct() {
 		targetField = fieldRefBuilder.createFieldRef(target);
 		
 		if(match.length != 2) {
@@ -109,6 +89,30 @@ public class DateFilter implements FilterPlugin {
 			};
 		}
 	}
+	/**
+	 * 	Commodity constructor for unit tests
+	 * @param fieldRefBuilder
+	 */
+	public DateFilter(FieldRefBuilder fieldRefBuilder) {
+		this.fieldRefBuilder = fieldRefBuilder;
+	}
+
+	@Override
+	public boolean process(Event evt) {
+		Object obj = evt.getField(fieldName);
+		if(!(obj instanceof String)) {
+			return false;
+		}
+		String dateAsText = (String)obj;
+		try {
+			targetField.set(evt, dateParser.parse(dateAsText));
+		} catch (Exception e) {
+			LOG.info("Failed parsing date {}", dateAsText, e);
+			evt.addTags(tag_on_failure);
+			return false;
+		}
+		return true;
+	}
 
 	private Date extracted(String str) {
 		return new Date((long)(Double.parseDouble(str) * 1000l));
@@ -125,13 +129,8 @@ public class DateFilter implements FilterPlugin {
 		}
 		return parse;
 	}
-	@Override
-	public void stop() {
-		// TODO Auto-generated method stub
-		
-	}
 
-    /**
+	/**
      * Convert a string based locale into a Locale Object.
      * Assumes the string has form "{language}_{country}_{variant}".
      * Examples: "en", "de_DE", "_GB", "en_US_WIN", "de__POSIX", "fr_MAC"
@@ -146,7 +145,7 @@ public class DateFilter implements FilterPlugin {
             return null;
         }
         localeString = localeString.trim();
-        if (localeString.toLowerCase().equals("default"))
+        if ("default".equalsIgnoreCase(localeString))
         {
             return Locale.getDefault();
         }

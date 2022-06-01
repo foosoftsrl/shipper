@@ -24,7 +24,7 @@ class TestPipelineInputStage {
 	}
 
 	@Test
-	public void test() throws IOException, InvalidPipelineException, InterruptedException {
+	void test() throws IOException, InvalidPipelineException, InterruptedException {
 		String pipelineDef = """
 		input {
 	        test{

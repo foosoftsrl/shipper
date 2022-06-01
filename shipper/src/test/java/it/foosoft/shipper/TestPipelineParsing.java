@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.logstash.ConfigLexer;
@@ -48,21 +49,25 @@ import it.foosoft.shipper.plugins.DefaultPluginFactory;
 class TestPipelineParsing {
 
 	@Test
+	@DisplayName("Verify parsing of a complex pipeline with plugins")
 	void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvalidPipelineException {
-		PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
-		walk();
+		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
+		assertEquals(16, pipeline.getComponents().size());
+		//walk();
 	}
 	
 	@Test
+	@DisplayName("Verify parsing of a plugin declaration with invalid parameter")
 	void testError() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
 		InvalidPipelineException exception = assertThrows(InvalidPipelineException.class, ()->PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/error.conf")));
 		assertEquals(5, exception.getLineNumber());
 	}
 
 	@Test
+	@DisplayName("Verify parsing of a file with conditions")
 	void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvalidPipelineException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
-		assertEquals(1, pipeline.getFilteringStage().size());
+		assertEquals(2, pipeline.getComponents().size());
 	}
 
 	private static void walk() throws IOException {
