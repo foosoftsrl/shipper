@@ -17,17 +17,17 @@ public class UrlDecodeFilter implements FilterPlugin {
 	
 	@NotNull
 	@ConfigurationParm(description="The field to decode")
-	String fieldName;
+	String field;
 	
 	@Override
 	public boolean process(Event e) {
-		String s = e.getFieldAsString(fieldName);
+		String s = e.getFieldAsString(field);
 		if(s == null) {
-			LOG.warn("Field {} is not a string", fieldName);
+			LOG.warn("Field {} is not a string", field);
 			return false;
 		}
 		// don't know what charset to use
-		e.setField(fieldName, URLDecoder.decode(s, StandardCharsets.UTF_8));
+		e.setField(field, URLDecoder.decode(s, StandardCharsets.UTF_8));
 		return true;
 	}
 

@@ -57,9 +57,9 @@ public class GeoIPFilter {
   public GeoIPFilter(String sourceField, String targetField, List<String> fields, String databasePath, int cacheSize) {
     this.sourceField = sourceField;
     this.targetField = targetField;
-    final File database = new File(databasePath);
+    final File databaseFile = new File(databasePath);
     try {
-      this.databaseReader = new DatabaseReader.Builder(database).withCache(new CHMCache(cacheSize)).build();
+      this.databaseReader = new DatabaseReader.Builder(databaseFile).withCache(new CHMCache(cacheSize)).build();
     } catch (InvalidDatabaseException e) {
       throw new IllegalArgumentException("The database provided is invalid or corrupted.", e);
     } catch (IOException e) {

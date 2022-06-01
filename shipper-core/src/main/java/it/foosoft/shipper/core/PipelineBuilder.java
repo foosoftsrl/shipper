@@ -8,6 +8,7 @@ import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -126,6 +127,14 @@ public class PipelineBuilder {
 	}
 
 	private void parseUrl(URL url) throws IOException, InvalidPipelineException {
+		if("file".equals(url.getProtocol())) {
+			try {
+				parseFile(new File(url.toURI()));
+			} catch (URISyntaxException e) {
+				throw new IOException(e);
+			}
+			return;
+		}
 		this.currentSource = url.toString();
 		try (InputStream istr = url.openStream()) {
 			parse(CharStreams.fromStream(istr));
