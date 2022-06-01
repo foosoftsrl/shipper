@@ -76,6 +76,15 @@ public class DateFilter implements FilterPlugin {
 			dateParser = this::extracted;
 		} else if("UNIX_MS".equals(match[1])) {
 			dateParser = str->new Date(Long.parseLong(str));
+		} else if("ISO8601".equals(match[1])) {
+			DateTimeFormatter parse = DateTimeFormatter.ISO_DATE_TIME;
+			dateParser = str->{
+				// Parse date, do not care about stray data at end.
+				// I'm afraid that this is a very bad idea, but there's a unit test
+				// I made ages ago... and... I don't want to think about it right now
+		        TemporalAccessor accessor = parse.parse(str, new ParsePosition(0));
+		        return Date.from(accessor.query(ZonedDateTime::from).toInstant());
+			};
 		} else if("".equals(match[1])) {
 			dateParser = str->new Date(Long.parseLong(str));
 		} else {
@@ -124,9 +133,8 @@ public class DateFilter implements FilterPlugin {
 			.parseCaseInsensitive()
 			.appendPattern(match[1])
 			.toFormatter(selectedLocale);
-		if(this.timezone != null) {
-			parse = parse.withZone(ZoneId.of(this.timezone));
-		}
+		ZoneId zoneId = this.timezone != null ? ZoneId.of(this.timezone) : ZoneId.systemDefault();
+		parse = parse.withZone(zoneId);
 		return parse;
 	}
 

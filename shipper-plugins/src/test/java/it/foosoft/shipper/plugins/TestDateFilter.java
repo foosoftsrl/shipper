@@ -88,6 +88,32 @@ class TestDateFilter {
 		assertEquals(1614261962202l, evt.getTimestamp());
 	}
 
+	@Test
+	@DisplayName("Verify support for microseconds format")
+	void testMicrosecondsFormat() throws URISyntaxException {
+		DateFilter f = createDateFilter();
+		f.locale = "en_US";
+		f.match = new String[] {"timestamp", "yyyy-MM-dd'T'HH:mm:ss.SSSSSSX"};
+		f.postConstruct();
+
+		EventImpl evt = new EventImpl().withField("timestamp", "2022-05-26T12:14:09.196257Z");
+		f.process(evt);
+		assertEquals(1653567249196l, evt.getTimestamp());
+	}
+	
+	@Test
+	@DisplayName("Verify support for ISO8601 format")
+	void testIso8601Format() throws URISyntaxException {
+		DateFilter f = createDateFilter();
+		f.locale = "en_US";
+		f.match = new String[] {"timestamp", "ISO8601"};
+		f.postConstruct();
+
+		EventImpl evt = new EventImpl().withField("timestamp", "2022-05-26T12:14:09.196257Z");
+		f.process(evt);
+		assertEquals(1653567249196l, evt.getTimestamp());
+	}
+
 	// Test "UNIX" timestamp syntax
 	@Test
 	void testUnix() throws URISyntaxException {
