@@ -12,7 +12,7 @@ repositories {
 def RPM_VERSION="0.2.2"
 
 // I prefer unit tests with files on side
-sourceSets.test.resources.srcDir (['src/test/java','src/test/resources'])
+sourceSets.test.resources.srcDir('src/test/java')
 
 generateGrammarSource {
     maxHeapSize = "64m"
@@ -24,6 +24,7 @@ task fatJar(type: Jar, dependsOn: 'jar') {
     manifest {
         attributes 'Main-Class': 'shipper.Shipper'
     }
+    dependsOn configurations.runtimeClasspath
     duplicatesStrategy = 'include'
     baseName = 'shipper-fat'
     from { 
