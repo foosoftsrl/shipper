@@ -4,7 +4,7 @@ User=shipper
 Type=simple
 WorkingDirectory=/usr/share/shipper
 Environment=LOG_CONFIG_PATH=log4j2.xml
-Environment=JAVA=/usr/lib/jvm/adoptopenjdk-15-hotspot-jre/bin/java
+Environment=JAVA=/usr/lib/jvm/adoptopenjdk-16-hotspot-jre/bin/java
 EnvironmentFile=-/etc/sysconfig/shipper
 
 [Install]
