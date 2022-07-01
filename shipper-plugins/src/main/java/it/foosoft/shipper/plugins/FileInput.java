@@ -109,12 +109,13 @@ public class FileInput implements Input {
 	class Worker {
 		private Thread thread;
 		private Entry currentEntry;
-		public AtomicBoolean stop = new AtomicBoolean();
+		public AtomicBoolean stopRequest = new AtomicBoolean();
 		public Worker() {
 			thread = new Thread(()->{
 				try {
 					run();
 				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					LOG.info("Worker exiting on unexpected interrupted exception");
 				}
 			});
@@ -122,14 +123,14 @@ public class FileInput implements Input {
 		}
 
 		public void stop() throws InterruptedException {
-			stop.set(true);
+			stopRequest.set(true);
 			thread.join();
 		}
 
 		private void run() throws InterruptedException {
 			while(true) {
 				var entry = taskQueue.take();
-				if(entry == Entry.STOP || stop.get()) {
+				if(entry == Entry.STOP || stopRequest.get()) {
 					return;
 				}
 				download(entry);
@@ -145,12 +146,13 @@ public class FileInput implements Input {
 					try(var reader = new InputStreamReader(istr)) {
 						try(var bufferedReader = new BufferedReader(reader)) {
 							String line;
-							while((line = bufferedReader.readLine()) != null && !stop.get()) {
+							while((line = bufferedReader.readLine()) != null && !stopRequest.get()) {
 								if(currentLine < entry.startOffset) {
 									LOG.debug("Skipping already processed line");
 								} else {
 									Event e = ctx.createEvent();
 									e.setField("message", line);
+									e.setField("path", currentEntry.path.toString());
 									ctx.processEvent(e);
 								}
 								currentLine++;
@@ -159,13 +161,12 @@ public class FileInput implements Input {
 					}
 				}
 				// if we arrived here on a stop request and we re
-				if(stop.get()) {
+				if(stopRequest.get()) {
 					int restartLine = Math.max(currentLine, entry.startOffset);
 					currentEntry = new Entry(currentEntry.path, currentEntry.lastModified, restartLine); 
 				} else {
 					currentEntry = null; 
 					Files.deleteIfExists(entry.path);
-					return;
 				}
 			} catch(Exception e) {
 				LOG.error("Failed processing file {}. Leaving it on disk", entry.path, e);

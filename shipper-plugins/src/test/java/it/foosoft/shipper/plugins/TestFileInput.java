@@ -2,6 +2,7 @@ package it.foosoft.shipper.plugins;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,13 +23,13 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.InputContextImpl;
 import it.foosoft.shipper.plugins.FileInput.Mode;
 
-public class TestFileInput {
+class TestFileInput {
 
 	@TempDir
 	File tempDir;
 
 	@Test
-	public void test() throws IOException, InterruptedException, ExecutionException {
+	void test() throws IOException, InterruptedException, ExecutionException {
 		List<Event> events = new ArrayList<>();
 		FileInput fileInput = new FileInput(new InputContextImpl(evt->{
 			events.add(evt);
@@ -56,6 +57,9 @@ public class TestFileInput {
 		fileInput.stop();
 		assertEquals(0, tempDir.listFiles().length);
 		assertEquals(4, events.size());
+		
+		// verify path field presence
+		assertNotNull(events.get(0).getField("path"));
 		Set<String> msgs = events.stream().map(e->e.getFieldAsString("message")).collect(Collectors.toSet());
 		assertTrue(msgs.contains("aaa"));
 		assertTrue(msgs.contains("bbb"));
