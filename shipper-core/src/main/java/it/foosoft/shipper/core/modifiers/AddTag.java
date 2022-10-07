@@ -2,16 +2,16 @@ package it.foosoft.shipper.core.modifiers;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
-import it.foosoft.shipper.core.PrintfInterpolator;
+import it.foosoft.shipper.core.StringInterpolator;
 
 public class AddTag implements EventProcessor {
 
 	private String tag;
-	private PrintfInterpolator interpolator;
+	private StringInterpolator interpolator;
 
 	public AddTag(String tag) {
 		this.tag = tag;
-		this.interpolator = new PrintfInterpolator(tag);
+		this.interpolator = new StringInterpolator(tag);
 	}
 
 	@Override

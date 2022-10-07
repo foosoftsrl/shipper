@@ -3,16 +3,16 @@ package it.foosoft.shipper.core.modifiers;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
-import it.foosoft.shipper.core.PrintfInterpolator;
+import it.foosoft.shipper.core.StringInterpolator;
 
 public class AddField implements EventProcessor {
 
 	private FieldRef fieldRef;
-	private PrintfInterpolator interpolator;
+	private StringInterpolator interpolator;
 
 	public AddField(FieldRef attrName, String value) {
 		this.fieldRef = attrName;
-		this.interpolator = new PrintfInterpolator(value);
+		this.interpolator = new StringInterpolator(value);
 	}
 
 	@Override

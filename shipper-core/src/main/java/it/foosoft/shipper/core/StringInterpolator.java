@@ -16,10 +16,10 @@ import it.foosoft.shipper.core.rvalue.RValueBuilder;
  * 
  * @author luca
  */
-public class PrintfInterpolator implements StringProvider{
+public class StringInterpolator implements StringProvider{
 	private Function<Event, String>[] functions;
 
-	public PrintfInterpolator(String value) {
+	public StringInterpolator(String value) {
 		Pattern p = Pattern.compile("%\\{([^\\}]*)\\}");
 		Matcher m = p.matcher(value);
 		int lastMatchEnd = 0;

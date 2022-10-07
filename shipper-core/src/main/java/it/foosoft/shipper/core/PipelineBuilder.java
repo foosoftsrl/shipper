@@ -546,7 +546,7 @@ public class PipelineBuilder {
 			return;
 		}
 		if(field.getType() == StringProvider.class) {
-			field.set(plugin, new PrintfInterpolator(value));
+			field.set(plugin, new StringInterpolator(value));
 			return;
 		}
 		if(field.getType() == String[].class) {

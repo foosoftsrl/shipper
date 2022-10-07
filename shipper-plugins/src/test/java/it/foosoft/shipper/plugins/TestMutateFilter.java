@@ -127,13 +127,40 @@ public class TestMutateFilter {
 	}
 
 	@Test
-	public void testGsub2() {
+	public void testSplit() {
 		Event e = new EventImpl();
-		e.setField("test", "17/Feb/2019:05:45:22.630+000");
+		e.setField("test", "aaa,bbb");
 		MutateFilter m = createMutateFilter();
-		m.gsub = new String[] {"test", "\\+000$", "+0000"};
+		m.split = Map.of("test",",");
 		m.start();
 		m.process(e);
-		assertEquals("17/Feb/2019:05:45:22.630+0000", e.getField("test"));
+		String[] s = (String[])e.getField("test");
+		assertEquals(2, s.length);
+		assertEquals("aaa", s[0]);
+		assertEquals("bbb", s[1]);
+	}
+
+	@Test
+	public void testReplaceSimple() {
+		Event e = new EventImpl();
+		e.setField("test", "test");
+		MutateFilter m = createMutateFilter();
+		m.replace = Map.of("test","replacement");
+		m.start();
+		m.process(e);
+		assertEquals("replacement", e.getField("test"));
+	}
+
+	@Test
+	public void testReplaceInterpolate() {
+		Event e = new EventImpl();
+		e.setField("test", "test");
+		e.setField("a", "1");
+		e.setField("b", "2");
+		MutateFilter m = createMutateFilter();
+		m.replace = Map.of("test","%{a}-%{b}");
+		m.start();
+		m.process(e);
+		assertEquals("1-2", e.getField("test"));
 	}
 }

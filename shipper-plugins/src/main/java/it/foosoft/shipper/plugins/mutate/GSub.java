@@ -1,4 +1,4 @@
-package it.foosoft.shipper.plugins;
+package it.foosoft.shipper.plugins.mutate;
 
 import java.util.regex.Pattern;
 
