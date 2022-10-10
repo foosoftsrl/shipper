@@ -3,16 +3,16 @@ package it.foosoft.shipper.plugins.mutate;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
-import it.foosoft.shipper.core.StringInterpolator;
+import it.foosoft.shipper.api.StringProvider;
 
 public class ReplaceField implements EventProcessor {
 
 	private FieldRef sourceField;
-	private StringInterpolator interpolator;
+	private StringProvider interpolator;
 
-	public ReplaceField(FieldRef sourceField, String withText) {
+	public ReplaceField(FieldRef sourceField, StringProvider withText) {
 		this.sourceField = sourceField;
-		this.interpolator = new StringInterpolator(withText);
+		this.interpolator = withText;
 	}
 
 	@Override

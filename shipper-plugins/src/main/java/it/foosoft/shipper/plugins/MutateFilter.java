@@ -12,6 +12,7 @@ import it.foosoft.shipper.api.FieldRef;
 import it.foosoft.shipper.api.FieldRefBuilder;
 import it.foosoft.shipper.api.FilterPlugin;
 import it.foosoft.shipper.api.Inject;
+import it.foosoft.shipper.api.StringInterpolatorBuilder;
 import it.foosoft.shipper.plugins.converters.Converters;
 import it.foosoft.shipper.plugins.mutate.CopyField;
 import it.foosoft.shipper.plugins.mutate.GSub;
@@ -75,6 +76,9 @@ public class MutateFilter implements FilterPlugin {
 	@Inject
 	FieldRefBuilder fieldRefBuilder;
 	
+	@Inject 
+	StringInterpolatorBuilder stringInterpolatorBuilder;
+	
 	private List<EventProcessor> eventProcessors = new ArrayList<>();
 
 	
@@ -104,7 +108,7 @@ public class MutateFilter implements FilterPlugin {
 		//replace (not implemented)
 		for(var s: replace.entrySet()) {
 			FieldRef sourceField = fieldRefBuilder.createFieldRef(s.getKey());
-			eventProcessors.add(new ReplaceField(sourceField, s.getValue()));
+			eventProcessors.add(new ReplaceField(sourceField, stringInterpolatorBuilder.createStringInterpolator(s.getValue())));
 		}
 
 		//convert 

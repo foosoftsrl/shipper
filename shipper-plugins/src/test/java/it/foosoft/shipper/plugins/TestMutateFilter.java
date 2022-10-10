@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.EventImpl;
 import it.foosoft.shipper.core.FieldRefBuilderImpl;
+import it.foosoft.shipper.core.StringInterpolator;
 
 public class TestMutateFilter {
 	
@@ -145,6 +146,7 @@ public class TestMutateFilter {
 		Event e = new EventImpl();
 		e.setField("test", "test");
 		MutateFilter m = createMutateFilter();
+		m.stringInterpolatorBuilder = StringInterpolator::new;
 		m.replace = Map.of("test","replacement");
 		m.start();
 		m.process(e);
@@ -158,6 +160,7 @@ public class TestMutateFilter {
 		e.setField("a", "1");
 		e.setField("b", "2");
 		MutateFilter m = createMutateFilter();
+		m.stringInterpolatorBuilder = StringInterpolator::new;
 		m.replace = Map.of("test","%{a}-%{b}");
 		m.start();
 		m.process(e);

@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.RValue;
+import it.foosoft.shipper.api.StringInterpolatorBuilder;
 import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.core.rvalue.RValueBuilder;
 
@@ -19,6 +20,13 @@ import it.foosoft.shipper.core.rvalue.RValueBuilder;
 public class StringInterpolator implements StringProvider{
 	private Function<Event, String>[] functions;
 
+	public final static class Factory implements StringInterpolatorBuilder {
+		@Override
+		public StringProvider createStringInterpolator(String text) {
+			return new StringInterpolator(text);
+		}
+	}
+	
 	public StringInterpolator(String value) {
 		Pattern p = Pattern.compile("%\\{([^\\}]*)\\}");
 		Matcher m = p.matcher(value);

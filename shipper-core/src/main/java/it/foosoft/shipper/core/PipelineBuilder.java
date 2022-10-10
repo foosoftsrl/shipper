@@ -61,6 +61,7 @@ import it.foosoft.shipper.api.PipelineComponent;
 import it.foosoft.shipper.api.PluginManager;
 import it.foosoft.shipper.api.PostConstruct;
 import it.foosoft.shipper.api.RValue;
+import it.foosoft.shipper.api.StringInterpolatorBuilder;
 import it.foosoft.shipper.api.StringProvider;
 import it.foosoft.shipper.core.Pipeline.Configuration;
 import it.foosoft.shipper.core.expressions.AndExpression;
@@ -455,6 +456,13 @@ public class PipelineBuilder {
 					try {
 						field.setAccessible(true);
 						field.set(plugin, new FieldRefBuilderImpl());
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						throw new IllegalStateException("Injection failure", e);
+					}
+				} else if(fieldType == StringInterpolatorBuilder.class) {
+					try {
+						field.setAccessible(true);
+						field.set(plugin, new StringInterpolator.Factory());
 					} catch (IllegalArgumentException | IllegalAccessException e) {
 						throw new IllegalStateException("Injection failure", e);
 					}
