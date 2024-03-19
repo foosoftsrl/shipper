@@ -34,8 +34,8 @@ dependencies {
     api project(path: ":shipper-api")
 
 	implementation group: 'org.antlr', name: 'antlr4-runtime', version: '4.9.1'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
-	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.17.0'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.0'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 	implementation group: 'org.apache.bval', name: 'bval-jsr', version: '2.0.5'
 

@@ -109,14 +109,13 @@ public class GeoIPFilter {
 
     if (input instanceof List) {
       ip = (String) ((List) input).get(0);
-
     } else if (input instanceof String) {
       ip = (String) input;
     } else {
       throw new IllegalArgumentException("Expected input field value to be String or List type");
     }
 
-    if (ip.trim().isEmpty()){
+    if (ip.trim().isEmpty()) {
       return false;
     }
 
@@ -324,7 +323,7 @@ public class GeoIPFilter {
           geoData.put(Fields.IP.fieldName(), ipAddress.getHostAddress());
           break;
         case AUTONOMOUS_SYSTEM_NUMBER:
-          Integer asn = response.getAutonomousSystemNumber();
+          Long asn = response.getAutonomousSystemNumber();
           if (asn != null) {
             geoData.put(Fields.AUTONOMOUS_SYSTEM_NUMBER.fieldName(), asn);
           }
@@ -362,7 +361,7 @@ public class GeoIPFilter {
           geoData.put(Fields.IP.fieldName(), ipAddress.getHostAddress());
           break;
         case AUTONOMOUS_SYSTEM_NUMBER:
-          Integer asn = response.getAutonomousSystemNumber();
+          Long asn = response.getAutonomousSystemNumber();
           if (asn != null) {
             geoData.put(Fields.AUTONOMOUS_SYSTEM_NUMBER.fieldName(), asn);
           }

@@ -29,6 +29,7 @@ public class BenchmarkPipeline {
 				BenchmarkPipeline.class.getResource(CLINK_PIPELINE));
 		if(enableDump)
 			pipeline.addOutput(new DebugOutput());
+		if(false)
 		pipeline.addOutput(new BatchAdapter(ctx -> new BatchOutput() {
 			List<Thread> threads = new ArrayList<>();
 			@Override
