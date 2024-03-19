@@ -8,6 +8,8 @@ import java.util.function.Consumer;
 
 import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FilterPlugin;
@@ -27,6 +29,9 @@ public class FilterWrapper implements Filter {
 
 	@ConfigurationParm
 	public String id;
+
+	@ConfigurationParm
+	public boolean dump = false;
 
 	@ConfigurationParm
 	public String[] remove_field = new String[0];
@@ -73,9 +78,23 @@ public class FilterWrapper implements Filter {
 
 	@Override
 	public Result process(Event e) {
+		if(dump) {
+            try {
+                System.err.println(new ObjectMapper().writeValueAsString(e));
+            } catch (JsonProcessingException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
 		if(inner.process(e)) {
 			for(var processor: eventProcessors) {
 				processor.process(e);
+			}
+		}
+		if(dump) {
+			try {
+				System.err.println(new ObjectMapper().writeValueAsString(e));
+			} catch (JsonProcessingException ex) {
+				throw new RuntimeException(ex);
 			}
 		}
 		return Result.CONTINUE;

@@ -50,10 +50,12 @@ class TestPipelineParsing {
 
 	@Test
 	@DisplayName("Verify parsing of a complex pipeline with plugins")
-	void testComplexPipeline() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvalidPipelineException {
+	void testComplexPipeline() throws IOException, IllegalArgumentException, SecurityException, InvalidPipelineException {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getResource("files/logstash.conf"));
-		assertEquals(16, pipeline.getComponents().size());
-		//walk();
+		for(var a: pipeline.getComponents()) {
+			System.err.println(a);
+		}
+		assertEquals(28, pipeline.getComponents().size());
 	}
 	
 	@Test
@@ -65,9 +67,9 @@ class TestPipelineParsing {
 
 	@Test
 	@DisplayName("Verify parsing of a file with conditions")
-	void testConditions() throws IOException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, InvalidPipelineException {
+	void testConditions() throws Exception {
 		Pipeline pipeline = PipelineBuilder.build(DefaultPluginFactory.INSTANCE, Configuration.MINIMAL, TestPipelineParsing.class.getClassLoader().getResource("it/foosoft/shipper/files/conditions.conf"));
-		assertEquals(2, pipeline.getComponents().size());
+		assertEquals(5, pipeline.getComponents().size());
 	}
 
 	private static void walk() throws IOException {

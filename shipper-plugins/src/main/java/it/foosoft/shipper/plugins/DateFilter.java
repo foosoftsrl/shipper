@@ -131,6 +131,7 @@ public class DateFilter implements FilterPlugin {
 		DateTimeFormatterBuilder builder = new DateTimeFormatterBuilder();
 		DateTimeFormatter parse = builder
 			.parseCaseInsensitive()
+			.parseLenient()
 			.appendPattern(match[1])
 			.toFormatter(selectedLocale);
 		ZoneId zoneId = this.timezone != null ? ZoneId.of(this.timezone) : ZoneId.systemDefault();

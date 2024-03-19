@@ -32,7 +32,7 @@ public class TimestampRvalue implements RValue, FieldRef {
 
 	@Override
 	public void remove(Event e) {
-		throw new UnsupportedOperationException("Metadata removal not implemented");
+		throw new UnsupportedOperationException("Can't remove timestamp attribute");
 	}
 
 	@Override

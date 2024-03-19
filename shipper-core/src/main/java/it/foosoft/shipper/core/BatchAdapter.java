@@ -1,19 +1,15 @@
 package it.foosoft.shipper.core;
 
+import it.foosoft.shipper.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import it.foosoft.shipper.api.BatchOutput;
-import it.foosoft.shipper.api.BatchOutputContext;
-import it.foosoft.shipper.api.Output;
-import it.foosoft.shipper.api.ConfigurationParm;
 
 /**
  * BatchAdapter's will expose a simple "push" interface to the pipeline, and a "pull" OutputContext to the BatchOutput plugin
  *  
  * @author luca
  */
-public class BatchAdapter extends EventQueue implements Output, BatchOutputContext {
+public class BatchAdapter implements Output {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BatchAdapter.class);
 
@@ -21,14 +17,16 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 
 	@ConfigurationParm
 	String id;
+
+	public EventQueue queue;
 	
 	public BatchAdapter(BatchOutput.Factory outputPlugin) {
 		this(outputPlugin, 512);
 	}
 	
 	public BatchAdapter(BatchOutput.Factory batchOutputFactory, int batchSize) {
-		super(batchSize);
-		this.innerOutput = batchOutputFactory.create(this);
+		this.queue = new EventQueue(batchSize);
+		this.innerOutput = batchOutputFactory.create(queue);
 	}
 
 	@Override
@@ -39,7 +37,7 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 	@Override
 	public void stop() {
 		try {
-			super.shutdown();
+			queue.shutdown();
 		} catch (InterruptedException e) {
 			LOG.warn("Interrupted while stopping the queue");
 			Thread.currentThread().interrupt();
@@ -47,4 +45,12 @@ public class BatchAdapter extends EventQueue implements Output, BatchOutputConte
 		innerOutput.stop();
 	}
 
+	@Override
+	public void process(Event e) {
+		queue.process(e);
+	}
+
+	public Integer queueSize() {
+		return queue.queueSize();
+	}
 }

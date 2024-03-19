@@ -148,4 +148,17 @@ class TestDateFilter {
 		assertEquals(1326149001132l, ((Date)evt.getField("pippo")).getTime());
 	}
 	
+	@Test
+	@DisplayName("Test support for stray whitespace")
+	void testStrayWhitespace() throws URISyntaxException {
+		DateFilter f = createDateFilter();
+		f.match = new String[] {"timestamp", "yyyy-MM-ddHH:mm:ss"};
+	    f.locale = "en";
+	    f.timezone = "GMT";
+		f.postConstruct();
+		EventImpl evt = new EventImpl().withField("timestamp", "2021-02-2313:29:04");
+		f.process(evt);
+		assertEquals(1653567249196l, evt.getTimestamp());
+	}
+	
 }

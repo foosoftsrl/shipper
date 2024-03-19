@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
@@ -76,5 +77,19 @@ class TestLogstashDissectFilter {
 		assertEquals(null, evt.getField("year"));
 		assertEquals(null, evt.getField("month"));
 		assertEquals("farmunica/2018/06/230023_164524b0f36a2f/smoothenc/sd_pr_mpl.ism/manifest", evt.getField("path"));
+	}
+
+	@Test
+	@DisplayName("Verify support for syntax such as %{+timeStamp}")
+	void testAppendToField() throws IOException, InvalidPipelineException {
+		LogstashDissectFilter filter = new LogstashDissectFilter();
+		filter.mapping.put("message","%{timeStamp}_%{+timeStamp} %{aaa}");
+		filter.start();
+		Event evt = new EventImpl(1000);
+		evt.setField("message", "2021-02-23_13:29:04 xyz");
+		filter.process(evt);
+		assertEquals(null, evt.getField("year"));
+		assertEquals(null, evt.getField("month"));
+		assertEquals("2021-02-23_13:29:04", evt.getField("timestamp"));
 	}
 }

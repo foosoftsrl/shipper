@@ -11,7 +11,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ public class Pipeline {
 		final int numThreads;
 		final int batchSize;
 		public static final Configuration MINIMAL = new Configuration(1);
-		public static final Configuration PERFORMANCE = new Configuration(Runtime.getRuntime().availableProcessors());
+		public static final Configuration PERFORMANCE = new Configuration(Runtime.getRuntime().availableProcessors(), 2048);
 
 		public Configuration(int numThreads) {
 			this(numThreads, 512);
@@ -230,11 +229,11 @@ public class Pipeline {
 
 	public Map<String,Integer> getQueueSizes() {
 		Map<String,Integer> queueSizes = new HashMap<>();
-		queueSizes.put("processing", queue.size());
+		queueSizes.put("processing", queue.queueSize());
 		int id = 0;
 		for(Output item: outputStage) {
 			if(item instanceof BatchAdapter batchAdapter) {
-				queueSizes.put("output-" + id, batchAdapter.queue.size());
+				queueSizes.put("output-" + id, batchAdapter.queueSize());
 			}
 			id++;
 		}
