@@ -9,7 +9,7 @@ repositories {
 }
 
 // won't set version, because systemd script expects vanilla shipper-fat.jar
-def RPM_VERSION="0.2.7"
+def RPM_VERSION="0.2.8"
 
 // I prefer unit tests with files on side
 sourceSets.test.resources.srcDir('src/test/java')
@@ -83,8 +83,8 @@ dependencies {
     implementation project(path: ":shipper-plugins")
     implementation project(path: ":shipper-core")
     implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.17.2'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.17.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.17.0'
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.12.1'
     implementation group: 'info.picocli', name: 'picocli', version: '4.6.1'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
