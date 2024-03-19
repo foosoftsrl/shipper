@@ -13,6 +13,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
 import org.slf4j.Logger;
@@ -174,7 +175,8 @@ public class ElasticSearchOutputSync implements BatchOutput {
 					con.setRequestProperty("Content-Encoding", "gzip");
 				try(OutputStream outputStream = con.getOutputStream()) {
 					if(compress) {
-						try(GZIPOutputStream zipOutputStream = new GZIPOutputStream(outputStream)) {
+						try(GZIPOutputStream zipOutputStream = new GZIPOutputStream(outputStream){{def.setLevel(Deflater.BEST_SPEED);}};
+						) {
 							writeEvents(zipOutputStream, events);
 						}
 					} else {
