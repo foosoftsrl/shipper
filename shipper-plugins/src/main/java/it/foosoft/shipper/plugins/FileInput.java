@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
@@ -68,8 +67,7 @@ public class FileInput implements Input {
 	int discover_interval = 15;
 
 	@ConfigurationParm
-	int randomWindow = 0;
-
+	int minimum_file_age = 10;
 	private InputContext ctx;
 
 	// the result of the last scan
@@ -296,13 +294,15 @@ public class FileInput implements Input {
 	public void scan() {
 		try {
 		    var entries = new ArrayList<Entry>();
+			long minimumAgeLimit = System.currentTimeMillis() - minimum_file_age * 1000;
 		    for(Path path: FileWalker.walk(this.path)) {
-		    	// Should I log anything if this is not a regular file? it may really be annoying
 		    	if(Files.isRegularFile(path)) {
 			    	long lastModifiedTime = Files.getLastModifiedTime(path).toMillis();
-			    	if(randomWindow > 0)
-			    		lastModifiedTime += ThreadLocalRandom.current().nextLong(randomWindow * 1000l);
-					entries.add(new Entry(path, lastModifiedTime));
+					if(lastModifiedTime > minimumAgeLimit) {
+						LOG.info("Ignoring file too young {}", path);
+					} else {
+						entries.add(new Entry(path, lastModifiedTime));
+					}
 		    	}
 		    }
 		    updateTaskList(entries);
