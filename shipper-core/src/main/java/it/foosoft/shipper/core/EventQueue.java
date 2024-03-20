@@ -5,14 +5,13 @@ import it.foosoft.shipper.api.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class EventQueue implements BatchOutputContext {
 	private static final List<Event> TERMINATOR = Collections.emptyList();
+	private final Timer timer;
 
 	private ArrayList<Event> currentBatch;
 	final LinkedBlockingDeque<List<Event>> batchQueue = new LinkedBlockingDeque<>(4);
@@ -25,8 +24,18 @@ public class EventQueue implements BatchOutputContext {
 	public EventQueue(int batchSize) {
 		this.batchSize = batchSize;
 		this.currentBatch = new ArrayList<>(batchSize);
+		this.timer = new Timer();
+		timer.scheduleAtFixedRate(new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					flushCurrentBatchIfNotEmpty();
+				} catch(InterruptedException e) {
+					// Swallow exception
+				}
+			}
+		}, 1000, 100);
 	}
-
 
 	private Object currentBatchMutex = new Object();
 
@@ -67,13 +76,18 @@ public class EventQueue implements BatchOutputContext {
 	}
 
 	public void shutdown() throws InterruptedException {
+		timer.cancel();
+		flushCurrentBatchIfNotEmpty();
+		batchQueue.put(TERMINATOR);
+	}
+
+	private void flushCurrentBatchIfNotEmpty() throws InterruptedException {
 		synchronized(currentBatchMutex) {
 			if (!currentBatch.isEmpty()) {
 				batchQueue.put(currentBatch);
 				this.currentBatch = new ArrayList<>(batchSize);
 			}
 		}
-		batchQueue.put(TERMINATOR);
 	}
 
 	public int queueSize() {

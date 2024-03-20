@@ -9,7 +9,7 @@ repositories {
 }
 
 // won't set version, because systemd script expects vanilla shipper-fat.jar
-def RPM_VERSION="0.2.10"
+def RPM_VERSION="0.2.11"
 
 // I prefer unit tests with files on side
 sourceSets.test.resources.srcDir('src/test/java')
