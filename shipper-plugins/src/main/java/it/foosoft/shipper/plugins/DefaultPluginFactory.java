@@ -60,7 +60,7 @@ public class DefaultPluginFactory implements PluginManager {
 		if(name.equals("elasticsearch"))
 			return ElasticSearchOutput.factory;
 		if(name.equals("elasticsearch_sync"))
-			return ElasticSearchOutputSync.factory;
+			return ElasticSearchOutput.factory;
 		throw new RuntimeException("No such output plugin: " + name);
 	}
 }

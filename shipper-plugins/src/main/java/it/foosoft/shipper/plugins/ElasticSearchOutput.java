@@ -1,42 +1,38 @@
 package it.foosoft.shipper.plugins;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.Deflater;
+import java.util.zip.GZIPOutputStream;
 
-import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.StatusLine;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.message.BasicHeader;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
+import com.alibaba.fastjson2.JSON;
+import it.foosoft.shipper.plugins.elastic.EventIndexResolver;
+import it.foosoft.shipper.plugins.elastic.EventWriter;
+import it.foosoft.shipper.plugins.elastic.FastJsonEventWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 
 import it.foosoft.shipper.api.BatchOutput;
 import it.foosoft.shipper.api.BatchOutputContext;
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.ConfigurationParm;
 import it.foosoft.shipper.api.StringProvider;
-import it.foosoft.shipper.plugins.elastic.BulkRequestInputStream;
+import it.foosoft.shipper.plugins.elastic.BulkIndexHeader;
 
 /**
  * Elasticsearch output
@@ -67,7 +63,9 @@ public class ElasticSearchOutput implements BatchOutput {
 	@ConfigurationParm
 	public boolean compress = true;
 	
-	private RestClient client;
+	private ObjectMapper objectMapper = new ObjectMapper();
+
+	private EventWriter eventWriter;
 
 	private ExecutorService service = Executors.newCachedThreadPool(new ThreadFactory() {
 		AtomicInteger counter = new AtomicInteger(0);
@@ -81,6 +79,8 @@ public class ElasticSearchOutput implements BatchOutput {
 
 	private BatchOutputContext ctx;
 
+	public AtomicLong nextServer = new AtomicLong(0);
+	
 	public static BatchOutput.Factory factory = ElasticSearchOutput::new;
 
 	public ElasticSearchOutput(BatchOutputContext ctx) {
@@ -89,41 +89,13 @@ public class ElasticSearchOutput implements BatchOutput {
 
 	@Override
 	public void start() {
-		HttpHost[] httpHosts = Arrays.stream(hosts).map(h->{
-			String[] split = h.split(":");
-			if(split.length != 2) {
-				throw new IllegalArgumentException("Invalid host: " + h);
-			}
-			return new HttpHost(split[0], Integer.parseInt(split[1]));
-		}).toArray(HttpHost[]::new);
+		this.eventWriter = new FastJsonEventWriter(index::evaluate);
 
-
-		Header[] defaultHeaders = new Header[0];
-		if(compress)
-		  defaultHeaders = new Header[]{new BasicHeader("Content-Encoding", "gzip")};
-		
-		client = RestClient.builder(httpHosts)
-				.setHttpClientConfigCallback(this::configureHttpAsyncClientBuilder)
-				.setDefaultHeaders(defaultHeaders)
-				.build();
 		for(int i = 0; i < outstandingRequests; i++) {
 			service.submit(this::poller);
 		}
 	}
 	
-	HttpAsyncClientBuilder configureHttpAsyncClientBuilder(HttpAsyncClientBuilder builder) {
-		if(user != null && password != null) {
-			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-				credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
-				builder.setDefaultCredentialsProvider(credentialsProvider);
-		}
-		builder.setDefaultIOReactorConfig(IOReactorConfig.custom()
-                .setIoThreadCount(outstandingRequests)
-                .build());
-		return builder;
-	}
-
-	ObjectMapper mapper = new ObjectMapper();
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class Shards {
@@ -163,7 +135,7 @@ public class ElasticSearchOutput implements BatchOutput {
 		public Item[] items;
 	}
 	/**
-	 * Continously poll the  
+	 * Continously poll for queued events
 	 * @return
 	 * @throws InterruptedException
 	 */
@@ -189,21 +161,43 @@ public class ElasticSearchOutput implements BatchOutput {
 		while(true) {
 			int retryTime = 100 * (1 << Math.max(failureCount, 8));
 			try {
-				Request req = new Request("POST", "/_bulk");
-				InputStream inStream = new BulkRequestInputStream(index, events, compress);
-				req.setEntity(new InputStreamEntity(inStream, ContentType.APPLICATION_JSON));
+				int idx = (((int)(nextServer.getAndAdd(1) & 0x7ffffffl)) % hosts.length);
+				URL url = new URL("http://" + hosts[idx] + "/_bulk");
+				HttpURLConnection con = (HttpURLConnection) url.openConnection();
 				long startTime = System.nanoTime();
-				Response response = client.performRequest(req);
-				StatusLine statusLine = response.getStatusLine();
-				if(statusLine.getStatusCode() != 200) {
-					LOG.info("Server replied {} - {}. Retrying in {}ms", statusLine.getStatusCode(), statusLine.getReasonPhrase());
-				} 
-				else {
-					BulkResponse bulkIndexResponse = mapper.reader().readValue(response.getEntity().getContent(), BulkResponse.class);
+
+				con.setRequestMethod("POST");
+				con.setDoInput(true);
+				con.setDoOutput(true);
+				con.setRequestProperty("Accept", "application/json");
+				con.setRequestProperty("Content-Type","application/x-ndjson");
+				if(user != null && password != null) {
+					String auth = user + ":" + password;
+					byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
+					String authHeaderValue = "Basic " + new String(encodedAuth);
+					con.setRequestProperty("Authorization", authHeaderValue);
+				}
+				con.setChunkedStreamingMode(4096);
+				if(compress)
+					con.setRequestProperty("Content-Encoding", "gzip");
+				try(OutputStream outputStream = con.getOutputStream()) {
+					if(compress) {
+						try(GZIPOutputStream zipOutputStream = new GZIPOutputStream(outputStream){{def.setLevel(Deflater.BEST_SPEED);}};
+						) {
+							eventWriter.writeEvents(zipOutputStream, events);
+						}
+					} else {
+						eventWriter.writeEvents(outputStream, events);
+					}
+				}
+				if(con.getResponseCode() != 200) {
+					LOG.info("Server replied {} - {}. Retrying in {}ms", con.getResponseCode(), con.getResponseMessage());
+				} else {
+					BulkResponse bulkIndexResponse = objectMapper.reader().readValue(con.getInputStream(), BulkResponse.class);
 					if(bulkIndexResponse.errors) {
-						for(var a : bulkIndexResponse.items) {
-							if(a.index != null) {
-								var index = a.index;
+						for(var item : bulkIndexResponse.items) {
+							if(item.index != null) {
+								var index = item.index;
 								if(index.error != null) {
 									LOG.info("Error {} while inserting document: {}", index.error.type, index.error.reason); 
 								}
@@ -216,7 +210,7 @@ public class ElasticSearchOutput implements BatchOutput {
 				}
 			}
 			catch(Throwable e) {
-				LOG.info("Error in communication with the server {}. Retrying...", e.getMessage());
+				LOG.info("Error in communication with the server {}. Retrying...", e.getMessage(), e);
 			}
 			failureCount++;
 			Thread.sleep(retryTime);
@@ -233,12 +227,6 @@ public class ElasticSearchOutput implements BatchOutput {
 			}
 		} catch (InterruptedException e1) {
 			LOG.warn("Interrupted while waiting for service stop");
-		}
-		try {
-			client.close();
-		} catch(IOException e) {
-			// Swallow and log the IO exception. They won't know what to do with this exception above 
-			LOG.warn("Failed stopping ES client: {}", e.getMessage());
 		}
 	}
 
