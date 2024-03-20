@@ -7,11 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -138,8 +134,8 @@ public class FileInput implements Input {
 		}
 
 		private void download(Entry entry) {
-			LOG.info("Processing {}", entry.path);
 			try {
+				LOG.info("Processing {} size = {} modified = {}", entry.path, Files.size(entry.path), new Date(entry.lastModified));
 				currentEntry = entry;
 				int currentLine = 0;
 				try(InputStream istr = getInputStream(entry)) {
@@ -316,7 +312,7 @@ public class FileInput implements Input {
 		}
 	}
 
-	private void updateTaskList(ArrayList<Entry> entries) throws InterruptedException {
+	private void updateTaskList(ArrayList<Entry> entries) {
 		Set<Path> fileList = new HashSet<>();
 		for(Entry e : entries) {
 		    if(!lastScan.contains(e.path)) {
