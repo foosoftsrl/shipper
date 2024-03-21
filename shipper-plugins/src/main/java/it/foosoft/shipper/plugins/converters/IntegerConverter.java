@@ -4,7 +4,7 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
 
-public class IntegerConverter implements EventProcessor {
+public class IntegerConverter implements Converter {
 
 	private FieldRef fieldRef;
 
@@ -16,7 +16,11 @@ public class IntegerConverter implements EventProcessor {
 	public void process(Event e) {
 		Object obj = fieldRef.get(e);
 		if(obj != null) {
-			fieldRef.set(e, Integer.parseInt(obj.toString()));
+			fieldRef.set(e, Long.parseLong(obj.toString()));
 		}
+	}
+	@Override
+	public String targetType() {
+		return "int";
 	}
 }

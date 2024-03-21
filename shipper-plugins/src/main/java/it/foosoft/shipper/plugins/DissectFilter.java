@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import javax.validation.constraints.NotNull;
 
+import it.foosoft.shipper.plugins.converters.Converter;
 import org.slf4j.Logger;
 
 import it.foosoft.shipper.api.Event;
@@ -36,7 +37,7 @@ public class DissectFilter implements FilterPlugin {
 	@Inject
 	public FieldRefBuilder fieldRefBuilder;
 	
-	public List<EventProcessor> converters = new ArrayList<>();
+	public List<Converter> converters = new ArrayList<>();
 	
 	static class Context {
 		Pattern pattern;

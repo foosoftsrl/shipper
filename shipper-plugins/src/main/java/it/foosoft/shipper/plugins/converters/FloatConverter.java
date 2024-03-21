@@ -4,7 +4,7 @@ import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
 
-public class FloatConverter implements EventProcessor {
+public class FloatConverter implements Converter {
 
 	private FieldRef fieldRef;
 
@@ -18,5 +18,10 @@ public class FloatConverter implements EventProcessor {
 		if(obj != null) {
 			fieldRef.set(e, Float.parseFloat(obj.toString()));
 		}
+	}
+
+	@Override
+	public String targetType() {
+		return "float";
 	}
 }

@@ -93,17 +93,43 @@ class TestLogstashDissectFilter {
 
 	@Test
 	@DisplayName("Verify that data type conversion failures result in a _dissectfailure tag")
-	void testExceptions() {
+	void testConversionFailure() {
 		LogstashDissectFilter filter = new LogstashDissectFilter();
 		filter.fieldRefBuilder = new FieldRefBuilderImpl();
 		filter.mapping.put("message","%{number} %{whatever}");
 		filter.convert_datatype.put("number","int");
 		filter.start();
 		Event evt = new EventImpl(1000);
-		evt.setField("message", "17837847984278217491 xyz");
+		evt.setField("message", "xxx xyz");
 		filter.process(evt);
-		assertEquals(null, evt.getField("17837847984278217491"));
-		assertEquals(null, evt.getField("xyz"));
+		assertTrue(evt.tags().contains("_dataconversionuncoercible_number"));
+	}
+
+	@Test
+	@DisplayName("Verify that data type conversion handles longs")
+	void testConversionLong() {
+		LogstashDissectFilter filter = new LogstashDissectFilter();
+		filter.fieldRefBuilder = new FieldRefBuilderImpl();
+		filter.mapping.put("message","%{number} %{whatever}");
+		filter.convert_datatype.put("number","int");
+		filter.start();
+		Event evt = new EventImpl(1000);
+		evt.setField("message", "111111111111111111 whatever");
+		filter.process(evt);
+		assertEquals(111111111111111111l, evt.getField("number"));
+		assertTrue(evt.tags().isEmpty());
+	}
+
+	@Test
+	@DisplayName("Verify that an error tag is added if the field simply does not exist")
+	void testDissectingNonExistingField() {
+		LogstashDissectFilter filter = new LogstashDissectFilter();
+		filter.fieldRefBuilder = new FieldRefBuilderImpl();
+		filter.mapping.put("message","%{number} %{whatever}");
+		filter.convert_datatype.put("number","int");
+		filter.start();
+		Event evt = new EventImpl(1000);
+		filter.process(evt);
 		assertTrue(evt.tags().contains("_dissectfailure"));
 	}
 }

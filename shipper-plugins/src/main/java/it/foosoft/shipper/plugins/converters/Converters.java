@@ -4,7 +4,7 @@ import it.foosoft.shipper.api.EventProcessor;
 import it.foosoft.shipper.api.FieldRef;
 
 public class Converters {
-	public static EventProcessor createConverter(FieldRef fieldRef, String targetFormat) {
+	public static Converter createConverter(FieldRef fieldRef, String targetFormat) {
 		if("integer".equals(targetFormat) || "int".equals(targetFormat)) {
 			return new IntegerConverter(fieldRef);
 		}

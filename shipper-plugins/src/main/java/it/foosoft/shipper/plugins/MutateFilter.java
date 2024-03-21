@@ -115,7 +115,10 @@ public class MutateFilter implements FilterPlugin {
 		for(var convertEntry: convert.entrySet()) {
 			String fieldName = convertEntry.getKey();
 			String targetFormat = convertEntry.getValue();
-			eventProcessors.add(Converters.createConverter(fieldRefBuilder.createFieldRef(fieldName), targetFormat));
+			var converter = Converters.createConverter(fieldRefBuilder.createFieldRef(fieldName), targetFormat);
+			eventProcessors.add(evt -> {
+				converter.process(evt);
+			});
 		}
 		
 		//gsub

@@ -36,6 +36,6 @@ public class TestGeoIp {
 		f.process(evt);
 		assertTrue(evt.getField("geoip") instanceof Map);
 		Map geoIp = (Map)evt.getField("geoip");
-		assertEquals(15169, geoIp.get("asn"));
+		assertEquals(15169l, geoIp.get("asn"));
 	}
 }

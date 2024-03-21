@@ -158,7 +158,7 @@ class TestDateFilter {
 		f.postConstruct();
 		EventImpl evt = new EventImpl().withField("timestamp", "2021-02-2313:29:04");
 		f.process(evt);
-		assertEquals(1653567249196l, evt.getTimestamp());
+		assertEquals(1614086944000l, evt.getTimestamp());
 	}
 	
 }

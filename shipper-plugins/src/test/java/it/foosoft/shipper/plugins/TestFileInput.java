@@ -34,6 +34,7 @@ class TestFileInput {
 		FileInput fileInput = new FileInput(new InputContextImpl(evt->{
 			events.add(evt);
 		}));
+		fileInput.minimum_file_age = 0;
 
 		fileInput.path = tempDir.getAbsolutePath() + "/*";
 		

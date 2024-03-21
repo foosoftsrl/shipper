@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import javax.validation.constraints.NotNull;
 
+import it.foosoft.shipper.plugins.converters.Converter;
 import org.logstash.dissect.DissectResult;
 import org.logstash.dissect.Dissector;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class LogstashDissectFilter implements FilterPlugin {
 	@Inject
 	public FieldRefBuilder fieldRefBuilder;
 	
-	public Map<String, EventProcessor> converters = new HashMap<String, EventProcessor>();
+	public Map<String, Converter> converters = new HashMap<String, Converter>();
 
 	static class Context {
 		Pattern pattern;
@@ -55,7 +56,8 @@ public class LogstashDissectFilter implements FilterPlugin {
 		for(var pattern: contexts.entrySet()) {
 			Object attr = evt.getField(pattern.getKey());
 			if(attr == null) {
-				LOG.warn("Attribute {} is null", pattern.getKey());
+				LOG.warn("Field {} is missing in {}", pattern.getKey(), evt.toString());
+				evt.addTags(tag_on_failure);
 				return false;
 			}
 			if(!(attr instanceof String)) {
@@ -66,17 +68,18 @@ public class LogstashDissectFilter implements FilterPlugin {
 			String attrString = (String)attr;
 			Dissector context = pattern.getValue();
 			DissectResult result = context.dissect(attrString.getBytes(), evt);
-			for(var converter: converters.entrySet()) {
-				try {
-					converter.getValue().process(evt);
-				} catch(RuntimeException e) {
-					LOG.warn("Failed converting field '{}' in message '{}' due to exception '{}' ",
-							converter.getKey(), attrString, e.getClass());
-					result.bail();
-				}
-			}
 			if(!result.matched()) {
 				evt.addTags(tag_on_failure);
+				return false;
+			}
+		}
+		for(var converter: converters.entrySet()) {
+			try {
+				converter.getValue().process(evt);
+			} catch(RuntimeException e) {
+				evt.addTag(String.format("_dataconversionuncoercible_%s", converter.getKey()));
+				LOG.warn("Failed coercing field '{}' to {}",
+						converter.getKey(), converter.getValue().targetType());
 				return false;
 			}
 		}

@@ -8,5 +8,5 @@ package it.foosoft.shipper.api;
  *
  */
 public interface EventProcessor {
-	public void process(Event e);
+	void process(Event e);
 }
