@@ -1,21 +1,19 @@
 package it.foosoft.shipper.plugins;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
 
+import it.foosoft.shipper.core.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
-import it.foosoft.shipper.core.EventImpl;
-import it.foosoft.shipper.core.InvalidPipelineException;
-import it.foosoft.shipper.core.Pipeline;
 import it.foosoft.shipper.core.Pipeline.Configuration;
-import it.foosoft.shipper.core.PipelineBuilder;
 
 class TestLogstashDissectFilter {
 	@Test
@@ -91,5 +89,21 @@ class TestLogstashDissectFilter {
 		assertEquals(null, evt.getField("year"));
 		assertEquals(null, evt.getField("month"));
 		assertEquals("2021-02-23_13:29:04", evt.getField("timestamp"));
+	}
+
+	@Test
+	@DisplayName("Verify that data type conversion failures result in a _dissectfailure tag")
+	void testExceptions() {
+		LogstashDissectFilter filter = new LogstashDissectFilter();
+		filter.fieldRefBuilder = new FieldRefBuilderImpl();
+		filter.mapping.put("message","%{number} %{whatever}");
+		filter.convert_datatype.put("number","int");
+		filter.start();
+		Event evt = new EventImpl(1000);
+		evt.setField("message", "17837847984278217491 xyz");
+		filter.process(evt);
+		assertEquals(null, evt.getField("17837847984278217491"));
+		assertEquals(null, evt.getField("xyz"));
+		assertTrue(evt.tags().contains("_dissectfailure"));
 	}
 }

@@ -22,15 +22,15 @@ public class TestElasticSearchOutput {
 
     @Test
     public void testJackson() throws IOException {
-        Event event = createEvent();
+        Event event = createSimpleEvent();
         JacksonEventWriter writer = new JacksonEventWriter(evt->"test", new ObjectMapper());
         try(var outputStream = new ByteArrayOutputStream()) {
             writer.writeEvents(outputStream, Arrays.asList(event, event));
             Assertions.assertEquals("""
                     {"index":{"_index":"test"}}
-                    {"@timestamp":0,"test":"testValue"}
+                    {"tags":["_failure"],"@timestamp":0,"test":"testValue"}
                     {"index":{"_index":"test"}}
-                    {"@timestamp":0,"test":"testValue"}""", new String(outputStream.toByteArray()));
+                    {"tags":["_failure"],"@timestamp":0,"test":"testValue"}""", new String(outputStream.toByteArray()));
         }
     }
 
@@ -38,15 +38,15 @@ public class TestElasticSearchOutput {
 
     @Test
     public void testFastJson() throws IOException {
-        Event event = createEvent();
+        Event event = createSimpleEvent();
         FastJsonEventWriter writer = new FastJsonEventWriter(evt->"test");
         try(var outputStream = new ByteArrayOutputStream()) {
             writer.writeEvents(outputStream, Arrays.asList(event, event));
             Assertions.assertEquals("""
                     {"index":{"_index":"test"}}
-                    {"@timestamp":0,"test":"testValue"}
+                    {"@timestamp":0,"test":"testValue","tags":["_failure"]}
                     {"index":{"_index":"test"}}
-                    {"@timestamp":0,"test":"testValue"}
+                    {"@timestamp":0,"test":"testValue","tags":["_failure"]}
                     """, new String(outputStream.toByteArray()));
         }
     }
@@ -70,11 +70,12 @@ public class TestElasticSearchOutput {
         return events;
     }
 
-    private static Event createEvent() {
+    private static Event createSimpleEvent() {
         Event event = new EventImpl();
         event.setTimestamp(new Date(0));
         event.setField("test","testValue");
         event.setMetadata("meta", "metaValue");
+        event.addTag("_failure");
         return event;
     }
 

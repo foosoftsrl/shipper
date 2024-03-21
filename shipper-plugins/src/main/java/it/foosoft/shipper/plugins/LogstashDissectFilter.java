@@ -1,9 +1,6 @@
 package it.foosoft.shipper.plugins;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
@@ -43,7 +40,7 @@ public class LogstashDissectFilter implements FilterPlugin {
 	@Inject
 	public FieldRefBuilder fieldRefBuilder;
 	
-	public List<EventProcessor> converters = new ArrayList<>();
+	public Map<String, EventProcessor> converters = new HashMap<String, EventProcessor>();
 
 	static class Context {
 		Pattern pattern;
@@ -53,10 +50,10 @@ public class LogstashDissectFilter implements FilterPlugin {
 	private Map<String,Dissector> contexts = new LinkedHashMap<>();
 
 	@Override
-	public boolean process(Event e) {
+	public boolean process(Event evt) {
 		boolean successful = true;
 		for(var pattern: contexts.entrySet()) {
-			Object attr = e.getField(pattern.getKey());
+			Object attr = evt.getField(pattern.getKey());
 			if(attr == null) {
 				LOG.warn("Attribute {} is null", pattern.getKey());
 				return false;
@@ -68,13 +65,19 @@ public class LogstashDissectFilter implements FilterPlugin {
 
 			String attrString = (String)attr;
 			Dissector context = pattern.getValue();
-			DissectResult result = context.dissect(attrString.getBytes(), e);
-			if(!result.matched()) {
-				e.addTags(tag_on_failure);
-				return false;
+			DissectResult result = context.dissect(attrString.getBytes(), evt);
+			for(var converter: converters.entrySet()) {
+				try {
+					converter.getValue().process(evt);
+				} catch(RuntimeException e) {
+					LOG.warn("Failed converting field '{}' in message '{}' due to exception '{}' ",
+							converter.getKey(), attrString, e.getClass());
+					result.bail();
+				}
 			}
-			for(var converter: converters) {
-				converter.process(e);
+			if(!result.matched()) {
+				evt.addTags(tag_on_failure);
+				return false;
 			}
 		}
 		return successful;
@@ -93,7 +96,7 @@ public class LogstashDissectFilter implements FilterPlugin {
 	private void prepareConverters() {
 		converters.clear();
 		for(Map.Entry<String, String> entry: convert_datatype.entrySet()) {
-			converters.add(Converters.createConverter(fieldRefBuilder.createFieldRef(entry.getKey()), entry.getValue()));
+			converters.put(entry.getKey(), Converters.createConverter(fieldRefBuilder.createFieldRef(entry.getKey()), entry.getValue()));
 		}
 	}
 
