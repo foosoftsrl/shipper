@@ -1,8 +1,5 @@
 package it.foosoft.shipper.plugins;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,6 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import it.foosoft.shipper.api.Event;
 import it.foosoft.shipper.core.Pipeline.Configuration;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class TestLogstashDissectFilter {
 	@Test
@@ -86,9 +85,9 @@ class TestLogstashDissectFilter {
 		Event evt = new EventImpl(1000);
 		evt.setField("message", "2021-02-23_13:29:04 xyz");
 		filter.process(evt);
-		assertEquals(null, evt.getField("year"));
-		assertEquals(null, evt.getField("month"));
-		assertEquals("2021-02-23_13:29:04", evt.getField("timestamp"));
+        assertNull(evt.getField("year"));
+        assertNull(evt.getField("month"));
+		assertEquals("2021-02-23_13:29:04", evt.getField("timeStamp"));
 	}
 
 	@Test

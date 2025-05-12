@@ -51,6 +51,8 @@ public class DefaultPluginFactory implements PluginManager {
 			return FarmUnicaPathFilter::new;
 		} else if (name.equals("useragent")) {
 			return UserAgentFilter::new;
+		} else if (name.equals("json")) {
+			return JsonFilter::new;
 		}
 		throw new RuntimeException("No such filter plugin: " + name);
 	}
