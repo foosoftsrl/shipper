@@ -28,8 +28,6 @@ jobs:
           wget https://services.gradle.org/distributions/gradle-7.4-bin.zip -P /tmp
           unzip -d /opt/gradle /tmp/gradle-7.4-bin.zip
           ln -s /opt/gradle/gradle-7.4/bin/gradle /usr/bin/gradle
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
-          export PATH=$JAVA_HOME/bin:$PATH
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,6 +36,8 @@ jobs:
       
       - name: Build project
         run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
+          export PATH=$JAVA_HOME/bin:$PATH
           gradle build
 
   package:
@@ -57,8 +57,6 @@ jobs:
           wget https://services.gradle.org/distributions/gradle-7.4-bin.zip -P /tmp
           unzip -d /opt/gradle /tmp/gradle-7.4-bin.zip
           ln -s /opt/gradle/gradle-7.4/bin/gradle /usr/bin/gradle
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
-          export PATH=$JAVA_HOME/bin:$PATH
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,6 +65,8 @@ jobs:
 
       - name: Build RPM package
         run: |
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
+          export PATH=$JAVA_HOME/bin:$PATH
           gradle rpm -PrpmTag=${{ env.RPM_TAG }}
 
       - name: Upload RPM artifact
