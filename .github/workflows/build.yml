@@ -1,0 +1,76 @@
+name: Build and Package RPM
+
+on:
+    push:
+      branches:
+        - '**'
+    release:
+        types: [published]
+    workflow_dispatch:
+
+env:
+  RPM_TAG: ${{ github.ref_name }}
+
+jobs:
+  build:
+    name: Gradle Build
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:8
+      #image: gradle:7.4.2-jdk18-alpine
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          dnf -y install epel-release
+          dnf -y install java-17-openjdk-devel rpm-build git unzip wget tar
+
+          wget https://services.gradle.org/distributions/gradle-7.4-bin.zip -P /tmp
+          unzip -d /opt/gradle /tmp/gradle-7.4-bin.zip
+          ln -s /opt/gradle/gradle-7.4/bin/gradle /usr/bin/gradle
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
+          export PATH=$JAVA_HOME/bin:$PATH
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Build project
+        run: |
+          gradle build
+
+  package:
+    name: Package RPM (on tag)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    container:
+      image: rockylinux:8
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          dnf -y install epel-release
+          dnf -y install java-17-openjdk-devel rpm-build git unzip wget tar
+
+          wget https://services.gradle.org/distributions/gradle-7.4-bin.zip -P /tmp
+          unzip -d /opt/gradle /tmp/gradle-7.4-bin.zip
+          ln -s /opt/gradle/gradle-7.4/bin/gradle /usr/bin/gradle
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
+          export PATH=$JAVA_HOME/bin:$PATH
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build RPM package
+        run: |
+          gradle rpm -PrpmTag=${{ env.RPM_TAG }}
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipper-rpm
+          path: shipper/build/distributions/*.rpm
