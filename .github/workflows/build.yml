@@ -16,19 +16,10 @@ jobs:
     name: Gradle Build
     runs-on: ubuntu-latest
     container:
-      #image: rockylinux:8
-      image: gradle:7.4.2-jdk18-alpine
+      #image: foosoftsrl/myrocky8-gradle:latest
+      image: gradle:7.4.2-jdk17-alpine
 
     steps:
-      #- name: Install system dependencies
-      #  run: |
-      #    dnf -y install epel-release
-      #    dnf -y install java-17-openjdk-devel rpm-build git unzip wget tar
-#
-#          wget https://services.gradle.org/distributions/gradle-7.4-bin.zip -P /tmp
-#          unzip -d /opt/gradle /tmp/gradle-7.4-bin.zip
-#          ln -s /opt/gradle/gradle-7.4/bin/gradle /usr/bin/gradle
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -36,8 +27,6 @@ jobs:
       
       - name: Build project
         run: |
-         # export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
-         # export PATH=$JAVA_HOME/bin:$PATH
           gradle build
 
   package:
@@ -46,18 +35,9 @@ jobs:
     needs: build
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     container:
-      image: rockylinux:8
+      image: gradle:7.4.2-jdk17-alpine
 
     steps:
-      - name: Install system dependencies
-        run: |
-          dnf -y install epel-release
-          dnf -y install java-17-openjdk-devel rpm-build git unzip wget tar
-
-          wget https://services.gradle.org/distributions/gradle-7.4-bin.zip -P /tmp
-          unzip -d /opt/gradle /tmp/gradle-7.4-bin.zip
-          ln -s /opt/gradle/gradle-7.4/bin/gradle /usr/bin/gradle
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -65,8 +45,6 @@ jobs:
 
       - name: Build RPM package
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-17.0.15.0.6-2.el8.x86_64
-          export PATH=$JAVA_HOME/bin:$PATH
           gradle rpm -PrpmTag=${{ env.RPM_TAG }}
 
       - name: Upload RPM artifact

@@ -8,7 +8,7 @@ repositories {
     jcenter()
 }
 
-def rpmTag = project.findProperty("rpmTag") ?: new Date().format('yyyyMMdd')
+def rpmTag = project.findProperty("rpmTag") ?: new Date().format('yyyyMMdd_HHmmss')
 
 // won't set version, because systemd script expects vanilla shipper-fat.jar
 def RPM_VERSION = rpmTag
