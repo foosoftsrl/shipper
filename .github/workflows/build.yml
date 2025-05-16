@@ -1,0 +1,54 @@
+name: Build and Package RPM
+
+on:
+    push:
+      branches:
+        - '**'
+    release:
+        types: [published]
+    workflow_dispatch:
+
+env:
+  RPM_TAG: ${{ github.ref_name }}
+
+jobs:
+  build:
+    name: Gradle Build
+    runs-on: ubuntu-latest
+    container:
+      #image: foosoftsrl/myrocky8-gradle:latest
+      image: gradle:7.4.2-jdk17-alpine
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Build project
+        run: |
+          gradle build
+
+  package:
+    name: Package RPM (on tag)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    container:
+      image: gradle:7.4.2-jdk17-alpine
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build RPM package
+        run: |
+          gradle rpm -PrpmTag=${{ env.RPM_TAG }}
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipper-rpm
+          path: shipper/build/distributions/*.rpm

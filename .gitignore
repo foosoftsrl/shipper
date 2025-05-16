@@ -2,6 +2,7 @@
 .gradle
 .settings
 .idea
+.project
 
 # Ignore Gradle build output directory
 build
